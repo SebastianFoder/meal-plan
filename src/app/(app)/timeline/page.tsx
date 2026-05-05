@@ -11,6 +11,7 @@ import { useMemo } from "react";
 import { RecipeFormModal } from "@/app/(app)/recipes/recipe-form-modal";
 import {
   useMarkMealEatenMutation,
+  useUnmarkMealEatenMutation,
   usePushMealMutation,
   useRemoveMealMutation,
   useScheduleMealMutation,
@@ -37,6 +38,7 @@ export default function TimelinePage() {
   const historyQuery = useMealHistoryQuery();
   const scheduleMealMutation = useScheduleMealMutation();
   const markMealEatenMutation = useMarkMealEatenMutation();
+  const unmarkMealEatenMutation = useUnmarkMealEatenMutation();
   const pushMealMutation = usePushMealMutation();
   const removeMealMutation = useRemoveMealMutation();
   const {
@@ -103,13 +105,16 @@ export default function TimelinePage() {
   };
 
   const handleMarkEaten = async (dayKey: string, meal: ScheduledMeal) => {
-    const actualMealName = window.prompt("What did you actually eat?") ?? "";
     await markMealEatenMutation.mutateAsync({
       date: dayKey,
       plannedScheduledMealId: meal.id,
       plannedRecipeId: meal.recipe.id,
-      actualMealName: actualMealName || meal.recipe.name,
+      actualMealName: meal.recipe.name,
     });
+  };
+
+  const handleUnmarkEaten = async (dayKey: string) => {
+    await unmarkMealEatenMutation.mutateAsync(dayKey);
   };
 
   const handlePushDay = async (mealId: string) => {
@@ -164,6 +169,7 @@ export default function TimelinePage() {
             history={history}
             onOpenScheduleForDay={openScheduleForDay}
             onMarkEaten={handleMarkEaten}
+            onUnmarkEaten={handleUnmarkEaten}
             onPushDay={handlePushDay}
             onPreviewRecipe={openRecipePreview}
             onRemoveMeal={handleRemoveMeal}

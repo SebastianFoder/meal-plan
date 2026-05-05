@@ -11,6 +11,7 @@ type WeekSectionProps = {
   history: MealHistory[];
   onOpenScheduleForDay: (dayKey: string) => void;
   onMarkEaten: (dayKey: string, meal: ScheduledMeal) => Promise<void>;
+  onUnmarkEaten: (dayKey: string) => Promise<void>;
   onPushDay: (mealId: string) => Promise<void>;
   onPreviewRecipe: (recipe: ScheduledMeal["recipe"]) => void;
   onRemoveMeal: (mealId: string) => Promise<void>;
@@ -22,6 +23,7 @@ export function WeekSection({
   history,
   onOpenScheduleForDay,
   onMarkEaten,
+  onUnmarkEaten,
   onPushDay,
   onPreviewRecipe,
   onRemoveMeal,
@@ -50,6 +52,7 @@ export function WeekSection({
               eaten={eaten}
               onOpenScheduleForDay={onOpenScheduleForDay}
               onMarkEaten={onMarkEaten}
+              onUnmarkEaten={onUnmarkEaten}
               onPushDay={onPushDay}
               onPreviewRecipe={onPreviewRecipe}
               onRemoveMeal={onRemoveMeal}

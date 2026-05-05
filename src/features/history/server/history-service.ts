@@ -35,3 +35,9 @@ export async function upsertMealHistory(input: UpsertMealHistoryInput) {
     },
   });
 }
+
+export async function removeMealHistoryByDate(userId: string, date: Date) {
+  await db.mealHistory.deleteMany({
+    where: { userId, date },
+  });
+}

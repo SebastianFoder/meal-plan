@@ -11,6 +11,7 @@ type DayCardProps = {
   eaten: MealHistory | undefined;
   onOpenScheduleForDay: (dayKey: string) => void;
   onMarkEaten: (dayKey: string, meal: ScheduledMeal) => Promise<void>;
+  onUnmarkEaten: (dayKey: string) => Promise<void>;
   onPushDay: (mealId: string) => Promise<void>;
   onPreviewRecipe: (recipe: ScheduledMeal["recipe"]) => void;
   onRemoveMeal: (mealId: string) => Promise<void>;
@@ -22,6 +23,7 @@ export function DayCard({
   eaten,
   onOpenScheduleForDay,
   onMarkEaten,
+  onUnmarkEaten,
   onPushDay,
   onPreviewRecipe,
   onRemoveMeal,
@@ -29,14 +31,19 @@ export function DayCard({
   const dayKey = format(day, "yyyy-MM-dd");
   const firstPlanned = activeMeals[0];
   const isCurrentDay = isToday(day);
+  const isCompleted = Boolean(eaten);
 
   return (
     <div
-      className={
-        isCurrentDay
-          ? "min-h-24 rounded-xl border border-white/20 bg-white/[0.09] p-3 text-sm shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]"
-          : "min-h-24 rounded-xl border border-white/10 bg-[#161618] p-3 text-sm"
-      }
+      className={`min-h-24 rounded-xl p-3 text-sm ${
+        isCompleted && isCurrentDay
+          ? "border border-emerald-300/30 bg-emerald-500/15 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]"
+          : isCompleted
+            ? "border border-emerald-400/20 bg-emerald-500/10"
+            : isCurrentDay
+              ? "border border-white/20 bg-white/[0.09] shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]"
+              : "border border-white/10 bg-[#161618]"
+      }`}
     >
       <div className="flex items-center justify-between gap-3">
         <p className="font-medium">{format(day, "EEE d")}</p>
@@ -47,10 +54,20 @@ export function DayCard({
             variant="ghost"
             size="sm"
             className="h-8 flex-1 px-0"
-            aria-label={`Mark ${firstPlanned.recipe.name} as eaten`}
-            onClick={() => onMarkEaten(dayKey, firstPlanned)}
+            aria-label={
+              isCompleted
+                ? `Unmark ${format(day, "EEEE d MMMM")} as eaten`
+                : `Mark ${firstPlanned.recipe.name} as eaten`
+            }
+            onClick={() =>
+              isCompleted ? onUnmarkEaten(dayKey) : onMarkEaten(dayKey, firstPlanned)
+            }
           >
-            <Check className="size-4" aria-hidden />
+            {isCompleted ? (
+              <X className="size-4" aria-hidden />
+            ) : (
+              <Check className="size-4" aria-hidden />
+            )}
           </Button>
         ) : null}
         {firstPlanned ? (
@@ -74,13 +91,6 @@ export function DayCard({
           <Plus className="size-4" aria-hidden />
         </Button>
       </div>
-      <div className="flex items-center justify-between gap-2">
-        {eaten ? (
-          <p className="text-xs text-zinc-300">
-            Ate: {eaten.actualRecipe?.name ?? eaten.actualMealName ?? "Logged"}
-          </p>
-        ) : null}
-      </div>
       <div className="mt-3 space-y-2">
         {activeMeals.length === 0 ? (
           <span className="text-zinc-500">No meal</span>
@@ -90,14 +100,16 @@ export function DayCard({
               key={meal.id}
               className="flex w-full items-center justify-between gap-2 rounded-lg border border-white/10 bg-white/10 px-2 py-1"
             >
-              <button
+              <Button
                 type="button"
-                className="min-w-0 truncate text-left text-zinc-100 transition duration-200 ease-out hover:text-white"
+                variant="ghost"
+                size="sm"
+                className="h-auto min-w-0 flex-1 justify-start px-0 text-left text-zinc-100 transition duration-200 ease-out hover:text-white"
                 onClick={() => onPreviewRecipe(meal.recipe)}
               >
                 {meal.recipe.name}
                 {meal.recipe.parentRecipe ? ` (${meal.recipe.parentRecipe.name} variation)` : ""}
-              </button>
+              </Button>
               <button
                 type="button"
                 aria-label={`Remove ${meal.recipe.name} from timeline`}

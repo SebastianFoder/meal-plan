@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { listMealHistory, upsertMealHistory } from "@/features/history/server/history-service";
+import {
+  listMealHistory,
+  removeMealHistoryByDate,
+  upsertMealHistory,
+} from "@/features/history/server/history-service";
 import { requireUserId } from "@/lib/auth";
 
 const upsertSchema = z.object({
@@ -10,6 +14,10 @@ const upsertSchema = z.object({
   actualRecipeId: z.string().optional(),
   actualMealName: z.string().max(120).optional(),
   notes: z.string().max(500).optional(),
+});
+
+const deleteSchema = z.object({
+  date: z.string().date(),
 });
 
 export async function GET() {
@@ -32,4 +40,19 @@ export async function POST(request: Request) {
   });
 
   return NextResponse.json(entry);
+}
+
+export async function DELETE(request: Request) {
+  const userId = await requireUserId();
+  const { searchParams } = new URL(request.url);
+  const parsed = deleteSchema.safeParse({
+    date: searchParams.get("date"),
+  });
+
+  if (!parsed.success) {
+    return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
+  }
+
+  await removeMealHistoryByDate(userId, new Date(parsed.data.date));
+  return NextResponse.json({ ok: true });
 }

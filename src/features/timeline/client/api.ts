@@ -60,3 +60,9 @@ export async function removeMeal(mealId: string) {
     method: "DELETE",
   });
 }
+
+export async function removeHistoryByDate(date: string) {
+  return requestJson<{ ok: true }>(`/api/history?date=${encodeURIComponent(date)}`, {
+    method: "DELETE",
+  });
+}
