@@ -16,6 +16,17 @@ type PushMealInput = {
   days: number;
 };
 
+type MoveMealInput = {
+  mealId: string;
+  targetDate: string;
+  targetOrderIndex?: number;
+};
+
+type MoveDayMealsInput = {
+  sourceDate: string;
+  targetDate: string;
+};
+
 type UpsertHistoryInput = {
   date: string;
   plannedScheduledMealId: string;
@@ -53,6 +64,22 @@ export async function upsertHistory(input: UpsertHistoryInput) {
 
 export async function pushMeal(input: PushMealInput) {
   return requestJson<ScheduledMeal[]>("/api/schedule/push", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
+}
+
+export async function moveMeal(input: MoveMealInput) {
+  return requestJson<ScheduledMeal[]>("/api/schedule/move", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
+}
+
+export async function moveDayMeals(input: MoveDayMealsInput) {
+  return requestJson<ScheduledMeal[]>("/api/schedule/move-day", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(input),

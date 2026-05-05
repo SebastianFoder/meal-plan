@@ -1,6 +1,18 @@
 import { create } from "zustand";
 import type { ScheduledMeal } from "@/app/(app)/timeline/types";
 
+type TimelineDragState =
+  | {
+      type: "day";
+      sourceDate: string;
+    }
+  | {
+      type: "meal";
+      mealId: string;
+      sourceDate: string;
+    }
+  | null;
+
 type TimelineUiState = {
   selectedDay: string | null;
   selectedRecipeId: string;
@@ -10,6 +22,9 @@ type TimelineUiState = {
   resumeScheduleAfterCreate: boolean;
   recipePreviewOpen: boolean;
   previewRecipe: ScheduledMeal["recipe"] | null;
+  dragState: TimelineDragState;
+  hoverDate: string | null;
+  hoverInsertionIndex: number | null;
   openScheduleForDay: (dayKey: string) => void;
   setScheduleModalOpen: (open: boolean) => void;
   setSelectedRecipeId: (recipeId: string) => void;
@@ -17,6 +32,10 @@ type TimelineUiState = {
   setCreateRecipeModalOpen: (open: boolean) => void;
   setRecipePreviewOpen: (open: boolean) => void;
   openRecipePreview: (recipe: ScheduledMeal["recipe"]) => void;
+  startDayDrag: (sourceDate: string) => void;
+  startMealDrag: (mealId: string, sourceDate: string) => void;
+  setDragHover: (hoverDate: string | null, hoverInsertionIndex?: number | null) => void;
+  clearDragState: () => void;
 };
 
 export const useTimelineUiStore = create<TimelineUiState>((set, get) => ({
@@ -28,6 +47,9 @@ export const useTimelineUiStore = create<TimelineUiState>((set, get) => ({
   resumeScheduleAfterCreate: false,
   recipePreviewOpen: false,
   previewRecipe: null,
+  dragState: null,
+  hoverDate: null,
+  hoverInsertionIndex: null,
   openScheduleForDay: (dayKey) =>
     set({
       selectedDay: dayKey,
@@ -59,5 +81,35 @@ export const useTimelineUiStore = create<TimelineUiState>((set, get) => ({
     set({
       previewRecipe: recipe,
       recipePreviewOpen: true,
+    }),
+  startDayDrag: (sourceDate) =>
+    set({
+      dragState: {
+        type: "day",
+        sourceDate,
+      },
+      hoverDate: null,
+      hoverInsertionIndex: null,
+    }),
+  startMealDrag: (mealId, sourceDate) =>
+    set({
+      dragState: {
+        type: "meal",
+        mealId,
+        sourceDate,
+      },
+      hoverDate: null,
+      hoverInsertionIndex: null,
+    }),
+  setDragHover: (hoverDate, hoverInsertionIndex = null) =>
+    set({
+      hoverDate,
+      hoverInsertionIndex,
+    }),
+  clearDragState: () =>
+    set({
+      dragState: null,
+      hoverDate: null,
+      hoverInsertionIndex: null,
     }),
 }));

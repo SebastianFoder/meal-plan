@@ -11,6 +11,8 @@ import { useMemo } from "react";
 import { RecipeFormModal } from "@/app/(app)/recipes/recipe-form-modal";
 import {
   useMarkMealEatenMutation,
+  useMoveDayMealsMutation,
+  useMoveMealMutation,
   useUnmarkMealEatenMutation,
   usePushMealMutation,
   useRemoveMealMutation,
@@ -41,6 +43,8 @@ export default function TimelinePage() {
   const unmarkMealEatenMutation = useUnmarkMealEatenMutation();
   const pushMealMutation = usePushMealMutation();
   const removeMealMutation = useRemoveMealMutation();
+  const moveMealMutation = useMoveMealMutation();
+  const moveDayMealsMutation = useMoveDayMealsMutation();
   const {
     selectedDay,
     selectedRecipeId,
@@ -56,6 +60,13 @@ export default function TimelinePage() {
     setCreateRecipeModalOpen,
     setRecipePreviewOpen,
     openRecipePreview,
+    dragState,
+    hoverDate,
+    hoverInsertionIndex,
+    startDayDrag,
+    startMealDrag,
+    setDragHover,
+    clearDragState,
   } = useTimelineUiStore();
 
   const recipes = recipesQuery.data ?? EMPTY_RECIPES;
@@ -128,6 +139,38 @@ export default function TimelinePage() {
     await removeMealMutation.mutateAsync(mealId);
   };
 
+  const handleDrop = async (targetDate: string) => {
+    if (!dragState) return;
+
+    if (dragState.type === "day") {
+      if (dragState.sourceDate === targetDate) {
+        clearDragState();
+        return;
+      }
+      await moveDayMealsMutation.mutateAsync({
+        sourceDate: dragState.sourceDate,
+        targetDate,
+      });
+      clearDragState();
+      return;
+    }
+
+    const targetOrderIndex =
+      hoverDate === targetDate && hoverInsertionIndex != null
+        ? hoverInsertionIndex
+        : undefined;
+    await moveMealMutation.mutateAsync({
+      mealId: dragState.mealId,
+      targetDate,
+      targetOrderIndex,
+    });
+    clearDragState();
+  };
+
+  const handleDragEnd = () => {
+    clearDragState();
+  };
+
   return (
     <div className="space-y-6">
       <ScheduleMealModal
@@ -180,6 +223,14 @@ export default function TimelinePage() {
             onPushDay={handlePushDay}
             onPreviewRecipe={openRecipePreview}
             onRemoveMeal={handleRemoveMeal}
+            dragState={dragState}
+            hoverDate={hoverDate}
+            hoverInsertionIndex={hoverInsertionIndex}
+            onDayDragStart={startDayDrag}
+            onMealDragStart={startMealDrag}
+            onDragEnd={handleDragEnd}
+            onHoverChange={setDragHover}
+            onDrop={handleDrop}
           />
         ))}
       </div>

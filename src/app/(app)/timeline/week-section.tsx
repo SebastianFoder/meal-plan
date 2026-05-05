@@ -15,6 +15,17 @@ type WeekSectionProps = {
   onPushDay: (mealId: string) => Promise<void>;
   onPreviewRecipe: (recipe: ScheduledMeal["recipe"]) => void;
   onRemoveMeal: (mealId: string) => Promise<void>;
+  dragState:
+    | { type: "day"; sourceDate: string }
+    | { type: "meal"; mealId: string; sourceDate: string }
+    | null;
+  hoverDate: string | null;
+  hoverInsertionIndex: number | null;
+  onDayDragStart: (dayKey: string) => void;
+  onMealDragStart: (mealId: string, dayKey: string) => void;
+  onDragEnd: () => void;
+  onHoverChange: (dayKey: string, insertionIndex?: number | null) => void;
+  onDrop: (targetDate: string) => Promise<void>;
 };
 
 export function WeekSection({
@@ -27,6 +38,14 @@ export function WeekSection({
   onPushDay,
   onPreviewRecipe,
   onRemoveMeal,
+  dragState,
+  hoverDate,
+  hoverInsertionIndex,
+  onDayDragStart,
+  onMealDragStart,
+  onDragEnd,
+  onHoverChange,
+  onDrop,
 }: WeekSectionProps) {
   const containerClassName =
     week.key === 0
@@ -60,6 +79,14 @@ export function WeekSection({
               onPushDay={onPushDay}
               onPreviewRecipe={onPreviewRecipe}
               onRemoveMeal={onRemoveMeal}
+              dragState={dragState}
+              hoverDate={hoverDate}
+              hoverInsertionIndex={hoverInsertionIndex}
+              onDayDragStart={onDayDragStart}
+              onMealDragStart={onMealDragStart}
+              onDragEnd={onDragEnd}
+              onHoverChange={onHoverChange}
+              onDrop={onDrop}
             />
           );
         })}
