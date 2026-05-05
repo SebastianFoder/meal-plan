@@ -13,6 +13,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Check, ChevronsRight, Plus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Dialog } from "@/components/ui/dialog";
 import {
   RecipeFormModal,
   type RecipeForForm,
@@ -32,6 +33,8 @@ type ScheduledMeal = {
   recipe: {
     id: string;
     name: string;
+    description?: string | null;
+    ingredients?: string[];
     parentRecipe?: { id: string; name: string } | null;
   };
 };
@@ -73,6 +76,8 @@ export default function TimelinePage() {
   const [createRecipeModalKey, setCreateRecipeModalKey] = useState(0);
   const [resumeScheduleAfterCreate, setResumeScheduleAfterCreate] =
     useState(false);
+  const [recipePreviewOpen, setRecipePreviewOpen] = useState(false);
+  const [previewRecipe, setPreviewRecipe] = useState<ScheduledMeal["recipe"] | null>(null);
 
   const load = async () => {
     try {
@@ -190,6 +195,55 @@ export default function TimelinePage() {
         onCreated={(recipe) => setSelectedRecipeId(recipe.id)}
         onSaved={load}
       />
+      <Dialog
+        open={recipePreviewOpen}
+        onOpenChange={setRecipePreviewOpen}
+        title={previewRecipe?.name ?? "Recipe"}
+        className="h-auto max-h-[80vh] w-[min(95vw,72rem)]"
+        contentClassName="max-h-[80vh] p-5"
+        footer={
+          <div className="flex justify-end">
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => setRecipePreviewOpen(false)}
+            >
+              Close
+            </Button>
+          </div>
+        }
+      >
+        <div className="grid items-stretch grid-cols-[minmax(0,2.2fr)_minmax(16rem,1fr)] gap-0">
+          <section className="flex h-full flex-col gap-3 border-r border-white/10 pr-4">
+            <h3 className="text-sm font-medium text-zinc-300">
+              Description / instructions
+            </h3>
+            <div className="h-full rounded-xl border border-white/10 bg-[#161618] p-3 text-sm text-zinc-200">
+              {previewRecipe?.description?.trim().length ? (
+                <p className="whitespace-pre-wrap">{previewRecipe.description}</p>
+              ) : (
+                <span className="text-zinc-500">No description or instructions added yet.</span>
+              )}
+            </div>
+          </section>
+          <section className="flex h-full flex-col gap-3 pl-4">
+            <h3 className="text-sm font-medium text-zinc-300">Ingredients</h3>
+            <div className="h-full rounded-xl border border-white/10 bg-[#161618] p-3">
+              {previewRecipe?.ingredients?.length ? (
+                <ul className="space-y-1.5 text-sm text-zinc-200">
+                  {previewRecipe.ingredients.map((ingredient) => (
+                    <li key={ingredient} className="list-inside list-disc truncate">
+                      {ingredient}
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-sm text-zinc-500">No ingredients yet.</p>
+              )}
+            </div>
+          </section>
+        </div>
+      </Dialog>
 
       <h2 className="text-lg font-semibold">Three-week timeline</h2>
       {loadError ? <p className="text-sm text-red-300">{loadError}</p> : null}
@@ -308,12 +362,19 @@ export default function TimelinePage() {
                             key={meal.id}
                             className="flex w-full items-center justify-between gap-2 rounded-lg border border-white/10 bg-white/10 px-2 py-1"
                           >
-                            <span className="min-w-0 truncate">
+                            <button
+                              type="button"
+                              className="min-w-0 truncate text-left text-zinc-100 transition duration-200 ease-out hover:text-white"
+                              onClick={() => {
+                                setPreviewRecipe(meal.recipe);
+                                setRecipePreviewOpen(true);
+                              }}
+                            >
                               {meal.recipe.name}
                               {meal.recipe.parentRecipe
                                 ? ` (${meal.recipe.parentRecipe.name} variation)`
                                 : ""}
-                            </span>
+                            </button>
                             <button
                               type="button"
                               aria-label={`Remove ${meal.recipe.name} from timeline`}
