@@ -61,9 +61,12 @@ export default function TimelinePage() {
   const recipes = recipesQuery.data ?? EMPTY_RECIPES;
   const scheduledMeals = scheduledMealsQuery.data ?? EMPTY_SCHEDULED_MEALS;
   const history = historyQuery.data ?? EMPTY_HISTORY;
-  const hasLoadError = recipesQuery.isError || scheduledMealsQuery.isError || historyQuery.isError;
+  const hasLoadError =
+    recipesQuery.isError || scheduledMealsQuery.isError || historyQuery.isError;
   const isInitialLoading =
-    recipesQuery.isLoading || scheduledMealsQuery.isLoading || historyQuery.isLoading;
+    recipesQuery.isLoading ||
+    scheduledMealsQuery.isLoading ||
+    historyQuery.isLoading;
 
   const weeks = useMemo<TimelineWeek[]>(() => {
     const currentWeekStart = startOfWeek(new Date(), { weekStartsOn: 1 });
@@ -157,9 +160,13 @@ export default function TimelinePage() {
 
       <h2 className="text-lg font-semibold">Three-week timeline</h2>
       {hasLoadError ? (
-        <p className="text-sm text-red-300">Could not load timeline data. Try refreshing the page.</p>
+        <p className="text-sm text-red-300">
+          Could not load timeline data. Try refreshing the page.
+        </p>
       ) : null}
-      {isInitialLoading ? <p className="text-sm text-zinc-400">Loading timeline...</p> : null}
+      {isInitialLoading ? (
+        <p className="text-sm text-zinc-400">Loading timeline...</p>
+      ) : null}
       <div className="space-y-4">
         {weeks.map((week) => (
           <WeekSection

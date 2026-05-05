@@ -1,5 +1,11 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { pushMeal, removeHistoryByDate, removeMeal, scheduleMeal, upsertHistory } from "./api";
+import {
+  pushMeal,
+  removeHistoryByDate,
+  removeMeal,
+  scheduleMeal,
+  upsertHistory,
+} from "./api";
 import { timelineQueryKeys } from "./query-keys";
 
 export function useScheduleMealMutation() {
@@ -7,7 +13,9 @@ export function useScheduleMealMutation() {
   return useMutation({
     mutationFn: scheduleMeal,
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: timelineQueryKeys.schedule });
+      await queryClient.invalidateQueries({
+        queryKey: timelineQueryKeys.schedule,
+      });
     },
   });
 }
@@ -56,7 +64,9 @@ export function useRemoveMealMutation() {
   return useMutation({
     mutationFn: removeMeal,
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: timelineQueryKeys.schedule });
+      await queryClient.invalidateQueries({
+        queryKey: timelineQueryKeys.schedule,
+      });
     },
   });
 }

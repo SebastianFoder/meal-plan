@@ -1,5 +1,9 @@
 import { requestJson } from "@/lib/client-api";
-import type { MealHistory, Recipe, ScheduledMeal } from "@/app/(app)/timeline/types";
+import type {
+  MealHistory,
+  Recipe,
+  ScheduledMeal,
+} from "@/app/(app)/timeline/types";
 
 type ScheduleMealInput = {
   recipeId: string;
@@ -62,7 +66,10 @@ export async function removeMeal(mealId: string) {
 }
 
 export async function removeHistoryByDate(date: string) {
-  return requestJson<{ ok: true }>(`/api/history?date=${encodeURIComponent(date)}`, {
-    method: "DELETE",
-  });
+  return requestJson<{ ok: true }>(
+    `/api/history?date=${encodeURIComponent(date)}`,
+    {
+      method: "DELETE",
+    },
+  );
 }

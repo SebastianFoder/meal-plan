@@ -60,7 +60,9 @@ export function DayCard({
                 : `Mark ${firstPlanned.recipe.name} as eaten`
             }
             onClick={() =>
-              isCompleted ? onUnmarkEaten(dayKey) : onMarkEaten(dayKey, firstPlanned)
+              isCompleted
+                ? onUnmarkEaten(dayKey)
+                : onMarkEaten(dayKey, firstPlanned)
             }
           >
             {isCompleted ? (
@@ -108,7 +110,9 @@ export function DayCard({
                 onClick={() => onPreviewRecipe(meal.recipe)}
               >
                 {meal.recipe.name}
-                {meal.recipe.parentRecipe ? ` (${meal.recipe.parentRecipe.name} variation)` : ""}
+                {meal.recipe.parentRecipe
+                  ? ` (${meal.recipe.parentRecipe.name} variation)`
+                  : ""}
               </Button>
               <button
                 type="button"

@@ -60,7 +60,10 @@ export async function pushMealForwardCascading(args: {
         userId: args.userId,
         OR: [
           { startDate: { gt: target.startDate } },
-          { startDate: target.startDate, orderIndex: { gte: target.orderIndex } },
+          {
+            startDate: target.startDate,
+            orderIndex: { gte: target.orderIndex },
+          },
         ],
       },
       orderBy: [{ startDate: "asc" }, { orderIndex: "asc" }],
@@ -87,7 +90,10 @@ export async function pushMealForwardCascading(args: {
   });
 }
 
-export async function deleteScheduledMeal(args: { userId: string; mealId: string }) {
+export async function deleteScheduledMeal(args: {
+  userId: string;
+  mealId: string;
+}) {
   return db.scheduledMeal.delete({
     where: {
       id_userId: {

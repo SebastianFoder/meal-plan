@@ -41,8 +41,12 @@ export function WeekSection({
       <div className="grid gap-3 md:grid-cols-7">
         {week.days.map((day) => {
           const dayKey = format(day, "yyyy-MM-dd");
-          const activeMeals = scheduledMeals.filter((meal) => isMealActiveOnDay(meal, dayKey));
-          const eaten = history.find((entry) => format(new Date(entry.date), "yyyy-MM-dd") === dayKey);
+          const activeMeals = scheduledMeals.filter((meal) =>
+            isMealActiveOnDay(meal, dayKey),
+          );
+          const eaten = history.find(
+            (entry) => format(new Date(entry.date), "yyyy-MM-dd") === dayKey,
+          );
 
           return (
             <DayCard
