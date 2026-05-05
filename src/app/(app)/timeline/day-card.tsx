@@ -4,6 +4,7 @@ import { format, isToday } from "date-fns";
 import { Check, ChevronsRight, GripVertical, Plus, X } from "lucide-react";
 import type { DragEventHandler } from "react";
 import { Button } from "@/components/ui/button";
+import { Spinner } from "@/components/ui/spinner";
 import type { MealHistory, ScheduledMeal } from "./types";
 
 type DayCardProps = {
@@ -16,6 +17,8 @@ type DayCardProps = {
   onPushDay: (mealId: string) => Promise<void>;
   onPreviewRecipe: (recipe: ScheduledMeal["recipe"]) => void;
   onRemoveMeal: (mealId: string) => Promise<void>;
+  isMovePending: boolean;
+  removingMealId: string | null;
   dragState:
     | { type: "day"; sourceDate: string }
     | { type: "meal"; mealId: string; sourceDate: string }
@@ -39,6 +42,8 @@ export function DayCard({
   onPushDay,
   onPreviewRecipe,
   onRemoveMeal,
+  isMovePending,
+  removingMealId,
   dragState,
   hoverDate,
   hoverInsertionIndex,
@@ -54,7 +59,7 @@ export function DayCard({
   const isCompleted = Boolean(eaten);
   const isDraggedDay = dragState?.type === "day" && dragState.sourceDate === dayKey;
   const isHoverDay = hoverDate === dayKey;
-  const canDropOnDay = Boolean(dragState) && !isDraggedDay;
+  const canDropOnDay = Boolean(dragState) && !isDraggedDay && !isMovePending;
 
   const dropPlaceholderVisible = canDropOnDay && isHoverDay;
   const showEmptyDayDropZone =
@@ -71,7 +76,7 @@ export function DayCard({
   return (
     <div
       onDragOver={(event) => {
-        if (!dragState) return;
+        if (!dragState || isMovePending) return;
         event.preventDefault();
         onHoverChange(dayKey, dragState.type === "meal" ? activeMeals.length : null);
       }}
@@ -90,7 +95,8 @@ export function DayCard({
         <p className="font-medium">{format(day, "EEE d")}</p>
         <button
           type="button"
-          draggable
+          draggable={!isMovePending}
+          disabled={isMovePending}
           aria-label={`Drag day ${format(day, "EEEE d MMMM")}`}
           onDragStart={() => onDayDragStart(dayKey)}
           onDragEnd={onDragEnd}
@@ -170,10 +176,11 @@ export function DayCard({
                 </div>
               ) : null}
               <div
-                draggable
+                draggable={!isMovePending}
                 onDragStart={() => onMealDragStart(meal.id, dayKey)}
                 onDragEnd={onDragEnd}
                 onDragOver={(event) => {
+                  if (isMovePending) return;
                   if (dragState?.type !== "meal") return;
                   event.preventDefault();
                   const rect = event.currentTarget.getBoundingClientRect();
@@ -193,6 +200,7 @@ export function DayCard({
                   variant="ghost"
                   size="sm"
                   className="h-auto min-w-0 flex-1 justify-start px-0 text-left text-zinc-100 transition duration-200 ease-out hover:text-white"
+                  disabled={isMovePending}
                   onClick={() => onPreviewRecipe(meal.recipe)}
                 >
                   {meal.recipe.name}
@@ -203,10 +211,18 @@ export function DayCard({
                 <button
                   type="button"
                   aria-label={`Remove ${meal.recipe.name} from timeline`}
-                  className="rounded p-0.5 text-zinc-400 transition duration-200 ease-out hover:bg-white/10 hover:text-white"
+                  disabled={isMovePending || removingMealId === meal.id}
+                  className="rounded p-0.5 text-zinc-400 transition duration-200 ease-out hover:bg-white/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
                   onClick={() => onRemoveMeal(meal.id)}
                 >
-                  <X className="size-3" aria-hidden />
+                  {removingMealId === meal.id ? (
+                    <span className="inline-flex items-center gap-1 text-[10px] text-zinc-300">
+                      <Spinner size="sm" />
+                      Removing
+                    </span>
+                  ) : (
+                    <X className="size-3" aria-hidden />
+                  )}
                 </button>
               </div>
             </div>

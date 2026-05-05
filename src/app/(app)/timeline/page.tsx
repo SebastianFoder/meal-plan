@@ -46,6 +46,11 @@ export default function TimelinePage() {
   const removeMealMutation = useRemoveMealMutation();
   const moveMealMutation = useMoveMealMutation();
   const moveDayMealsMutation = useMoveDayMealsMutation();
+  const isMovePending = moveMealMutation.isPending || moveDayMealsMutation.isPending;
+  const removingMealId =
+    removeMealMutation.isPending && typeof removeMealMutation.variables === "string"
+      ? removeMealMutation.variables
+      : null;
   const {
     selectedDay,
     selectedRecipeId,
@@ -204,6 +209,9 @@ export default function TimelinePage() {
       />
 
       <h2 className="text-lg font-semibold">Three-week timeline</h2>
+      {isMovePending ? (
+        <p className="text-sm text-zinc-400">Moving meals...</p>
+      ) : null}
       {hasLoadError ? (
         <p className="text-sm text-red-300">
           Could not load timeline data. Try refreshing the page.
@@ -225,6 +233,8 @@ export default function TimelinePage() {
               onPushDay={handlePushDay}
               onPreviewRecipe={openRecipePreview}
               onRemoveMeal={handleRemoveMeal}
+              isMovePending={isMovePending}
+              removingMealId={removingMealId}
               dragState={dragState}
               hoverDate={hoverDate}
               hoverInsertionIndex={hoverInsertionIndex}

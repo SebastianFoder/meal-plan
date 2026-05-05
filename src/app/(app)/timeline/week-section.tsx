@@ -15,6 +15,8 @@ type WeekSectionProps = {
   onPushDay: (mealId: string) => Promise<void>;
   onPreviewRecipe: (recipe: ScheduledMeal["recipe"]) => void;
   onRemoveMeal: (mealId: string) => Promise<void>;
+  isMovePending: boolean;
+  removingMealId: string | null;
   dragState:
     | { type: "day"; sourceDate: string }
     | { type: "meal"; mealId: string; sourceDate: string }
@@ -38,6 +40,8 @@ export function WeekSection({
   onPushDay,
   onPreviewRecipe,
   onRemoveMeal,
+  isMovePending,
+  removingMealId,
   dragState,
   hoverDate,
   hoverInsertionIndex,
@@ -79,6 +83,8 @@ export function WeekSection({
               onPushDay={onPushDay}
               onPreviewRecipe={onPreviewRecipe}
               onRemoveMeal={onRemoveMeal}
+              isMovePending={isMovePending}
+              removingMealId={removingMealId}
               dragState={dragState}
               hoverDate={hoverDate}
               hoverInsertionIndex={hoverInsertionIndex}
