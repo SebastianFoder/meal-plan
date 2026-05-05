@@ -77,3 +77,14 @@ export async function pushMealForwardCascading(args: {
     });
   });
 }
+
+export async function deleteScheduledMeal(args: { userId: string; mealId: string }) {
+  return db.scheduledMeal.delete({
+    where: {
+      id_userId: {
+        id: args.mealId,
+        userId: args.userId,
+      },
+    },
+  });
+}

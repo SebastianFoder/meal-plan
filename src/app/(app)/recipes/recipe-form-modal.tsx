@@ -21,6 +21,7 @@ type RecipeFormModalProps = {
   allRecipes: RecipeForForm[];
   editingRecipe: RecipeForForm | null;
   onSaved: () => void | Promise<void>;
+  onCreated?: (recipe: RecipeForForm) => void;
 };
 
 function parseApiError(payload: unknown): string {
@@ -46,6 +47,7 @@ export function RecipeFormModal({
   allRecipes,
   editingRecipe,
   onSaved,
+  onCreated,
 }: RecipeFormModalProps) {
   const [name, setName] = useState(() => editingRecipe?.name ?? "");
   const [description, setDescription] = useState(
@@ -121,6 +123,11 @@ export function RecipeFormModal({
         }
         setSubmitError(parseApiError(payload));
         return;
+      }
+
+      const savedRecipe = (await res.json()) as RecipeForForm;
+      if (!editingRecipe) {
+        onCreated?.(savedRecipe);
       }
 
       onOpenChange(false);
