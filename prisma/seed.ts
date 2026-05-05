@@ -1,3 +1,4 @@
+import "dotenv/config";
 import { addDays, startOfDay } from "date-fns";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "../src/generated/prisma/client";
@@ -13,7 +14,7 @@ async function main() {
     update: {},
   });
 
-  const templates = await Promise.all(
+  const recipes = await Promise.all(
     [
       {
         name: "Chicken Rice Bowl",
@@ -26,12 +27,12 @@ async function main() {
         ingredients: ["greek yogurt", "berries", "granola", "honey"],
       },
       {
-        name: "Pasta Pomodoro",
-        description: "Simple weeknight dinner",
-        ingredients: ["pasta", "tomato", "garlic", "olive oil", "basil"],
+        name: "Burger",
+        description: "Main burger recipie",
+        ingredients: ["burger bun", "beef patty", "lettuce", "tomato"],
       },
     ].map((meal) =>
-      prisma.mealTemplate.upsert({
+      prisma.recipe.upsert({
         where: { userId_name: { userId: user.id, name: meal.name } },
         create: { userId: user.id, ...meal },
         update: { ...meal },
@@ -39,13 +40,29 @@ async function main() {
     ),
   );
 
+  await prisma.recipe.upsert({
+    where: { userId_name: { userId: user.id, name: "Burger with Bacon" } },
+    create: {
+      userId: user.id,
+      parentRecipeId: recipes[2].id,
+      name: "Burger with Bacon",
+      description: "Burger variation with crispy bacon",
+      ingredients: ["burger bun", "beef patty", "bacon", "lettuce", "tomato"],
+    },
+    update: {
+      parentRecipeId: recipes[2].id,
+      description: "Burger variation with crispy bacon",
+      ingredients: ["burger bun", "beef patty", "bacon", "lettuce", "tomato"],
+    },
+  });
+
   const today = startOfDay(new Date());
   await prisma.scheduledMeal.deleteMany({ where: { userId: user.id } });
   await prisma.scheduledMeal.createMany({
     data: [
-      { userId: user.id, mealTemplateId: templates[0].id, startDate: today, durationDays: 2, orderIndex: 1 },
-      { userId: user.id, mealTemplateId: templates[1].id, startDate: addDays(today, 2), durationDays: 1, orderIndex: 2 },
-      { userId: user.id, mealTemplateId: templates[2].id, startDate: addDays(today, 3), durationDays: 3, orderIndex: 3 },
+      { userId: user.id, recipeId: recipes[0].id, startDate: today, durationDays: 2, orderIndex: 1 },
+      { userId: user.id, recipeId: recipes[1].id, startDate: addDays(today, 2), durationDays: 1, orderIndex: 2 },
+      { userId: user.id, recipeId: recipes[2].id, startDate: addDays(today, 3), durationDays: 3, orderIndex: 3 },
     ],
   });
 }

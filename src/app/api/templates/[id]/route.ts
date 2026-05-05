@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { deleteTemplate, updateTemplate } from "@/features/templates/server/templates-service";
+import { deleteRecipe, updateRecipe } from "@/features/templates/server/templates-service";
 import { requireUserId } from "@/lib/auth";
 
 const updateSchema = z.object({
   name: z.string().min(1).max(120),
+  parentRecipeId: z.string().optional(),
   description: z.string().max(500).optional(),
   ingredients: z.array(z.string().min(1)).min(1),
 });
@@ -21,7 +22,7 @@ export async function PUT(
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   }
 
-  const updated = await updateTemplate({
+  const updated = await updateRecipe({
     id,
     userId,
     ...parsed.data,
@@ -36,6 +37,6 @@ export async function DELETE(
 ) {
   const userId = await requireUserId();
   const { id } = await context.params;
-  await deleteTemplate(userId, id);
+  await deleteRecipe(userId, id);
   return NextResponse.json({ ok: true });
 }

@@ -6,7 +6,7 @@ import { getAuthSession } from "@/lib/auth";
 
 const links = [
   { href: "/dashboard", label: "Dashboard" },
-  { href: "/templates", label: "Templates" },
+  { href: "/recipes", label: "Recipies" },
   { href: "/timeline", label: "Timeline" },
 ];
 

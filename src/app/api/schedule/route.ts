@@ -7,7 +7,7 @@ import {
 import { requireUserId } from "@/lib/auth";
 
 const createSchema = z.object({
-  mealTemplateId: z.string().min(1),
+  recipeId: z.string().min(1),
   startDate: z.string().date(),
   durationDays: z.number().int().min(1).max(30),
 });
@@ -27,7 +27,7 @@ export async function POST(request: Request) {
 
   const created = await createScheduledMeal({
     userId,
-    mealTemplateId: parsed.data.mealTemplateId,
+    recipeId: parsed.data.recipeId,
     startDate: new Date(parsed.data.startDate),
     durationDays: parsed.data.durationDays,
   });

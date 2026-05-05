@@ -6,7 +6,7 @@ import { db } from "@/lib/prisma";
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(db),
   session: {
-    strategy: "database",
+    strategy: "jwt",
   },
   providers: [
     GoogleProvider({
@@ -15,9 +15,9 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   callbacks: {
-    session: async ({ session, user }) => {
+    session: async ({ session, user, token }) => {
       if (session.user) {
-        session.user.id = user.id;
+        session.user.id = user?.id ?? token.sub ?? "";
       }
       return session;
     },

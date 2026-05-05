@@ -27,7 +27,7 @@ model User {
   updatedAt     DateTime       @updatedAt
   accounts      Account[]
   sessions      Session[]
-  mealTemplates  MealTemplate[]
+  recipes       Recipe[]
   scheduledMeals ScheduledMeal[]
   mealHistory    MealHistory[]
 
@@ -71,28 +71,33 @@ model VerificationToken {
   @@unique([identifier, token])
 }
 
-model MealTemplate {
+model Recipe {
   id            String          @id @default(cuid())
   userId        String
+  parentRecipeId String?
   name          String
   description   String?
   ingredients   String[]
   createdAt     DateTime        @default(now())
   updatedAt     DateTime        @updatedAt
   user          User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  parentRecipe  Recipe?         @relation("RecipeVariations", fields: [parentRecipeId], references: [id], onDelete: SetNull)
+  variations    Recipe[]        @relation("RecipeVariations")
   scheduledMeals  ScheduledMeal[]
-  plannedHistory  MealHistory[] @relation("PlannedTemplateHistory")
-  actualHistory   MealHistory[] @relation("ActualTemplateHistory")
+  plannedHistory  MealHistory[] @relation("PlannedRecipeHistory")
+  actualHistory   MealHistory[] @relation("ActualRecipeHistory")
 
   @@index([userId, createdAt])
+  @@index([userId, parentRecipeId])
   @@unique([userId, name])
   @@unique([id, userId])
+  @@map("MealTemplate")
 }
 
 model ScheduledMeal {
   id            String              @id @default(cuid())
   userId        String
-  mealTemplateId String
+  recipeId      String              @map("mealTemplateId")
   startDate     DateTime
   durationDays  Int
   orderIndex    Int
@@ -100,11 +105,11 @@ model ScheduledMeal {
   createdAt     DateTime            @default(now())
   updatedAt     DateTime            @updatedAt
   user          User                @relation(fields: [userId], references: [id], onDelete: Cascade)
-  mealTemplate  MealTemplate        @relation(fields: [mealTemplateId], references: [id], onDelete: Cascade)
+  recipe        Recipe              @relation(fields: [recipeId], references: [id], onDelete: Cascade)
   mealHistory   MealHistory[]
 
   @@index([userId, startDate, orderIndex])
-  @@index([mealTemplateId])
+  @@index([recipeId])
   @@unique([id, userId])
 }
 
@@ -113,19 +118,19 @@ model MealHistory {
   userId                String
   date                  DateTime
   plannedScheduledMealId String?
-  plannedTemplateId     String?
-  actualTemplateId      String?
+  plannedRecipeId       String?       @map("plannedTemplateId")
+  actualRecipeId        String?       @map("actualTemplateId")
   actualMealName        String?
   notes                 String?
   createdAt             DateTime      @default(now())
   updatedAt             DateTime      @updatedAt
   user                  User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   plannedScheduledMeal  ScheduledMeal? @relation(fields: [plannedScheduledMealId], references: [id], onDelete: SetNull)
-  plannedTemplate       MealTemplate?  @relation("PlannedTemplateHistory", fields: [plannedTemplateId], references: [id], onDelete: SetNull)
-  actualTemplate        MealTemplate?  @relation("ActualTemplateHistory", fields: [actualTemplateId], references: [id], onDelete: SetNull)
+  plannedRecipe         Recipe?        @relation("PlannedRecipeHistory", fields: [plannedRecipeId], references: [id], onDelete: SetNull)
+  actualRecipe          Recipe?        @relation("ActualRecipeHistory", fields: [actualRecipeId], references: [id], onDelete: SetNull)
 
   @@unique([userId, date])
   @@index([userId, date])
-  @@index([plannedTemplateId])
-  @@index([actualTemplateId])
+  @@index([plannedRecipeId])
+  @@index([actualRecipeId])
 }

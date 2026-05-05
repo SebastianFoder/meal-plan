@@ -15,12 +15,12 @@ export default async function DashboardPage() {
       </Card>
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <Card>
+        <Card className="min-w-0">
           <h2 className="mb-3 text-sm font-medium text-zinc-300">Meals per week</h2>
           <StatsBarChart data={stats.mealsPerWeek} xKey="week" />
         </Card>
-        <Card>
-          <h2 className="mb-3 text-sm font-medium text-zinc-300">Most frequent meals</h2>
+        <Card className="min-w-0">
+          <h2 className="mb-3 text-sm font-medium text-zinc-300">Most frequent recipies</h2>
           <StatsBarChart data={stats.mealFrequency} xKey="name" />
         </Card>
       </div>

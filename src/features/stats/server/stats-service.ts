@@ -1,18 +1,52 @@
 import { endOfWeek, format, startOfWeek, subWeeks } from "date-fns";
 import { db } from "@/lib/prisma";
 
+type LegacyStatRow = {
+  date: Date;
+  actualMealName: string | null;
+  actualTemplate: { name: string; ingredients: string[] } | null;
+  plannedTemplate: { ingredients: string[] } | null;
+};
+
 export async function getDashboardStats(userId: string) {
   const now = new Date();
   const from = startOfWeek(subWeeks(now, 7), { weekStartsOn: 1 });
   const to = endOfWeek(now, { weekStartsOn: 1 });
 
-  const history = await db.mealHistory.findMany({
-    where: { userId, date: { gte: from, lte: to } },
-    include: {
-      actualTemplate: true,
-      plannedTemplate: true,
-    },
-  });
+  let history: Array<{
+    date: Date;
+    actualMealName: string | null;
+    actualRecipe: { name: string; ingredients: string[] } | null;
+    plannedRecipe: { ingredients: string[] } | null;
+  }>;
+
+  try {
+    history = await db.mealHistory.findMany({
+      where: { userId, date: { gte: from, lte: to } },
+      include: {
+        actualRecipe: true,
+        plannedRecipe: true,
+      },
+    });
+  } catch {
+    const legacyDb = db as unknown as {
+      mealHistory: { findMany: (args: object) => Promise<LegacyStatRow[]> };
+    };
+    const legacyRows = await legacyDb.mealHistory.findMany({
+      where: { userId, date: { gte: from, lte: to } },
+      include: {
+        actualTemplate: true,
+        plannedTemplate: true,
+      },
+    });
+
+    history = legacyRows.map((row) => ({
+      date: row.date,
+      actualMealName: row.actualMealName,
+      actualRecipe: row.actualTemplate,
+      plannedRecipe: row.plannedTemplate,
+    }));
+  }
 
   const mealsPerWeekMap = new Map<string, number>();
   const mealFrequencyMap = new Map<string, number>();
@@ -22,11 +56,11 @@ export async function getDashboardStats(userId: string) {
     const weekLabel = format(startOfWeek(row.date, { weekStartsOn: 1 }), "MMM d");
     mealsPerWeekMap.set(weekLabel, (mealsPerWeekMap.get(weekLabel) ?? 0) + 1);
 
-    const mealName = row.actualTemplate?.name ?? row.actualMealName ?? "Unknown";
+    const mealName = row.actualRecipe?.name ?? row.actualMealName ?? "Unknown";
     mealFrequencyMap.set(mealName, (mealFrequencyMap.get(mealName) ?? 0) + 1);
 
     const ingredients =
-      row.actualTemplate?.ingredients ?? row.plannedTemplate?.ingredients ?? [];
+      row.actualRecipe?.ingredients ?? row.plannedRecipe?.ingredients ?? [];
     for (const ingredient of ingredients) {
       ingredientFrequencyMap.set(
         ingredient,

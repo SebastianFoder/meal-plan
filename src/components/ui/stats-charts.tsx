@@ -12,8 +12,8 @@ export function StatsBarChart({
   xKey: "name" | "week";
 }) {
   return (
-    <div className="h-64 w-full">
-      <ResponsiveContainer width="100%" height="100%">
+    <div className="h-64 w-full min-w-0">
+      <ResponsiveContainer width="100%" height="100%" minWidth={0}>
         <BarChart data={data}>
           <XAxis dataKey={xKey} stroke="#a1a1aa" />
           <YAxis stroke="#a1a1aa" />

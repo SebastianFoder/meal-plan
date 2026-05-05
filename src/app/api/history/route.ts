@@ -6,8 +6,8 @@ import { requireUserId } from "@/lib/auth";
 const upsertSchema = z.object({
   date: z.string().date(),
   plannedScheduledMealId: z.string().optional(),
-  plannedTemplateId: z.string().optional(),
-  actualTemplateId: z.string().optional(),
+  plannedRecipeId: z.string().optional(),
+  actualRecipeId: z.string().optional(),
   actualMealName: z.string().max(120).optional(),
   notes: z.string().max(500).optional(),
 });
