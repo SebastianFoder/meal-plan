@@ -103,27 +103,6 @@ async function moveHistoryEntryWithConflictResolution(args: {
   });
 }
 
-async function rebalanceOrderIndexes(args: {
-  tx: Prisma.TransactionClient;
-  userId: string;
-}) {
-  const rows = await args.tx.scheduledMeal.findMany({
-    where: { userId: args.userId },
-    orderBy: [{ startDate: "asc" }, { orderIndex: "asc" }],
-    select: { id: true, orderIndex: true },
-  });
-
-  for (const [index, row] of rows.entries()) {
-    const nextOrderIndex = index + 1;
-    if (row.orderIndex !== nextOrderIndex) {
-      await args.tx.scheduledMeal.update({
-        where: { id: row.id },
-        data: { orderIndex: nextOrderIndex },
-      });
-    }
-  }
-}
-
 async function listScheduledMealsWithRecipe(args: {
   tx: Prisma.TransactionClient;
   userId: string;
@@ -263,7 +242,6 @@ export async function moveScheduledMeal(args: {
       });
     }
 
-    await rebalanceOrderIndexes({ tx, userId: args.userId });
     return listScheduledMealsWithRecipe({ tx, userId: args.userId });
   });
 }
@@ -350,7 +328,6 @@ export async function moveDayMeals(args: {
       });
     }
 
-    await rebalanceOrderIndexes({ tx, userId: args.userId });
     return listScheduledMealsWithRecipe({ tx, userId: args.userId });
   });
 }

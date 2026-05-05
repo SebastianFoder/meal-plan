@@ -141,30 +141,31 @@ export default function TimelinePage() {
 
   const handleDrop = async (targetDate: string) => {
     if (!dragState) return;
+    const currentDragState = dragState;
+    const currentHoverDate = hoverDate;
+    const currentHoverInsertionIndex = hoverInsertionIndex;
+    clearDragState();
 
-    if (dragState.type === "day") {
-      if (dragState.sourceDate === targetDate) {
-        clearDragState();
+    if (currentDragState.type === "day") {
+      if (currentDragState.sourceDate === targetDate) {
         return;
       }
       await moveDayMealsMutation.mutateAsync({
-        sourceDate: dragState.sourceDate,
+        sourceDate: currentDragState.sourceDate,
         targetDate,
       });
-      clearDragState();
       return;
     }
 
     const targetOrderIndex =
-      hoverDate === targetDate && hoverInsertionIndex != null
-        ? hoverInsertionIndex
+      currentHoverDate === targetDate && currentHoverInsertionIndex != null
+        ? currentHoverInsertionIndex
         : undefined;
     await moveMealMutation.mutateAsync({
-      mealId: dragState.mealId,
+      mealId: currentDragState.mealId,
       targetDate,
       targetOrderIndex,
     });
-    clearDragState();
   };
 
   const handleDragEnd = () => {

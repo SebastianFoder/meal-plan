@@ -101,11 +101,19 @@ export const useTimelineUiStore = create<TimelineUiState>((set, get) => ({
       hoverDate: null,
       hoverInsertionIndex: null,
     }),
-  setDragHover: (hoverDate, hoverInsertionIndex = null) =>
+  setDragHover: (hoverDate, hoverInsertionIndex = null) => {
+    const state = get();
+    if (
+      state.hoverDate === hoverDate &&
+      state.hoverInsertionIndex === hoverInsertionIndex
+    ) {
+      return;
+    }
     set({
       hoverDate,
       hoverInsertionIndex,
-    }),
+    });
+  },
   clearDragState: () =>
     set({
       dragState: null,
