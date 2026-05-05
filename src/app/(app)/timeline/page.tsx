@@ -7,56 +7,61 @@ import {
   format,
   startOfWeek,
 } from "date-fns";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
+import { RecipeFormModal } from "@/app/(app)/recipes/recipe-form-modal";
 import {
-  RecipeFormModal,
-  type RecipeForForm,
-} from "@/app/(app)/recipes/recipe-form-modal";
+  useMarkMealEatenMutation,
+  usePushMealMutation,
+  useRemoveMealMutation,
+  useScheduleMealMutation,
+} from "@/features/timeline/client/mutations";
+import {
+  useMealHistoryQuery,
+  useScheduledMealsQuery,
+  useTimelineRecipesQuery,
+} from "@/features/timeline/client/queries";
+import { useTimelineUiStore } from "@/features/timeline/client/timeline-ui-store";
+import type { RecipeForForm } from "@/features/recipes/client/types";
 import { RecipePreviewDialog } from "./recipe-preview-dialog";
 import { ScheduleMealModal } from "./schedule-meal-modal";
 import type { MealHistory, Recipe, ScheduledMeal, TimelineWeek } from "./types";
 import { WeekSection } from "./week-section";
 
+const EMPTY_RECIPES: Recipe[] = [];
+const EMPTY_SCHEDULED_MEALS: ScheduledMeal[] = [];
+const EMPTY_HISTORY: MealHistory[] = [];
+
 export default function TimelinePage() {
-  const [recipes, setRecipes] = useState<Recipe[]>([]);
-  const [scheduledMeals, setScheduledMeals] = useState<ScheduledMeal[]>([]);
-  const [history, setHistory] = useState<MealHistory[]>([]);
-  const [loadError, setLoadError] = useState<string | null>(null);
-  const [selectedDay, setSelectedDay] = useState<string | null>(null);
-  const [selectedRecipeId, setSelectedRecipeId] = useState("");
-  const [scheduleModalOpen, setScheduleModalOpen] = useState(false);
-  const [createRecipeModalOpen, setCreateRecipeModalOpen] = useState(false);
-  const [createRecipeModalKey, setCreateRecipeModalKey] = useState(0);
-  const [resumeScheduleAfterCreate, setResumeScheduleAfterCreate] =
-    useState(false);
-  const [recipePreviewOpen, setRecipePreviewOpen] = useState(false);
-  const [previewRecipe, setPreviewRecipe] = useState<ScheduledMeal["recipe"] | null>(null);
+  const recipesQuery = useTimelineRecipesQuery();
+  const scheduledMealsQuery = useScheduledMealsQuery();
+  const historyQuery = useMealHistoryQuery();
+  const scheduleMealMutation = useScheduleMealMutation();
+  const markMealEatenMutation = useMarkMealEatenMutation();
+  const pushMealMutation = usePushMealMutation();
+  const removeMealMutation = useRemoveMealMutation();
+  const {
+    selectedDay,
+    selectedRecipeId,
+    scheduleModalOpen,
+    createRecipeModalOpen,
+    createRecipeModalKey,
+    recipePreviewOpen,
+    previewRecipe,
+    openScheduleForDay,
+    setScheduleModalOpen,
+    setSelectedRecipeId,
+    openCreateRecipeModal,
+    setCreateRecipeModalOpen,
+    setRecipePreviewOpen,
+    openRecipePreview,
+  } = useTimelineUiStore();
 
-  const load = async () => {
-    try {
-      const [tRes, sRes, hRes] = await Promise.all([
-        fetch("/api/recipes"),
-        fetch("/api/schedule"),
-        fetch("/api/history"),
-      ]);
-
-      if (!tRes.ok || !sRes.ok || !hRes.ok) {
-        throw new Error("Failed to load timeline data.");
-      }
-
-      setRecipes((await tRes.json()) as Recipe[]);
-      setScheduledMeals((await sRes.json()) as ScheduledMeal[]);
-      setHistory((await hRes.json()) as MealHistory[]);
-      setLoadError(null);
-    } catch {
-      setLoadError("Could not load timeline data. Try refreshing the page.");
-    }
-  };
-
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    void load();
-  }, []);
+  const recipes = recipesQuery.data ?? EMPTY_RECIPES;
+  const scheduledMeals = scheduledMealsQuery.data ?? EMPTY_SCHEDULED_MEALS;
+  const history = historyQuery.data ?? EMPTY_HISTORY;
+  const hasLoadError = recipesQuery.isError || scheduledMealsQuery.isError || historyQuery.isError;
+  const isInitialLoading =
+    recipesQuery.isLoading || scheduledMealsQuery.isLoading || historyQuery.isLoading;
 
   const weeks = useMemo<TimelineWeek[]>(() => {
     const currentWeekStart = startOfWeek(new Date(), { weekStartsOn: 1 });
@@ -88,62 +93,31 @@ export default function TimelinePage() {
     [recipes],
   );
 
-  const openScheduleForDay = (dayKey: string) => {
-    setSelectedDay(dayKey);
-    setScheduleModalOpen(true);
-  };
-
   const handleSchedule = async (recipeId: string) => {
     if (!selectedDay || !recipeId) return;
-    const res = await fetch("/api/schedule", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        recipeId,
-        startDate: selectedDay,
-        durationDays: 1,
-      }),
+    await scheduleMealMutation.mutateAsync({
+      recipeId,
+      startDate: selectedDay,
+      durationDays: 1,
     });
-    if (!res.ok) {
-      throw new Error("Could not schedule recipe");
-    }
-    await load();
-  };
-
-  const openCreateRecipe = () => {
-    setResumeScheduleAfterCreate(true);
-    setScheduleModalOpen(false);
-    setCreateRecipeModalKey((k) => k + 1);
-    setCreateRecipeModalOpen(true);
   };
 
   const handleMarkEaten = async (dayKey: string, meal: ScheduledMeal) => {
     const actualMealName = window.prompt("What did you actually eat?") ?? "";
-    await fetch("/api/history", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        date: dayKey,
-        plannedScheduledMealId: meal.id,
-        plannedRecipeId: meal.recipe.id,
-        actualMealName: actualMealName || meal.recipe.name,
-      }),
+    await markMealEatenMutation.mutateAsync({
+      date: dayKey,
+      plannedScheduledMealId: meal.id,
+      plannedRecipeId: meal.recipe.id,
+      actualMealName: actualMealName || meal.recipe.name,
     });
-    await load();
   };
 
   const handlePushDay = async (mealId: string) => {
-    await fetch("/api/schedule/push", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ mealId, days: 1 }),
-    });
-    await load();
+    await pushMealMutation.mutateAsync({ mealId, days: 1 });
   };
 
   const handleRemoveMeal = async (mealId: string) => {
-    await fetch(`/api/schedule/${mealId}`, { method: "DELETE" });
-    await load();
+    await removeMealMutation.mutateAsync(mealId);
   };
 
   return (
@@ -160,22 +134,15 @@ export default function TimelinePage() {
             : "selected day"
         }
         onSchedule={handleSchedule}
-        onCreateRecipe={openCreateRecipe}
+        onCreateRecipe={openCreateRecipeModal}
       />
       <RecipeFormModal
         key={createRecipeModalKey}
         open={createRecipeModalOpen}
-        onOpenChange={(open) => {
-          setCreateRecipeModalOpen(open);
-          if (!open && resumeScheduleAfterCreate) {
-            setScheduleModalOpen(true);
-            setResumeScheduleAfterCreate(false);
-          }
-        }}
+        onOpenChange={setCreateRecipeModalOpen}
         allRecipes={recipeFormItems}
         editingRecipe={null}
         onCreated={(recipe) => setSelectedRecipeId(recipe.id)}
-        onSaved={load}
       />
       <RecipePreviewDialog
         open={recipePreviewOpen}
@@ -184,7 +151,10 @@ export default function TimelinePage() {
       />
 
       <h2 className="text-lg font-semibold">Three-week timeline</h2>
-      {loadError ? <p className="text-sm text-red-300">{loadError}</p> : null}
+      {hasLoadError ? (
+        <p className="text-sm text-red-300">Could not load timeline data. Try refreshing the page.</p>
+      ) : null}
+      {isInitialLoading ? <p className="text-sm text-zinc-400">Loading timeline...</p> : null}
       <div className="space-y-4">
         {weeks.map((week) => (
           <WeekSection
@@ -195,10 +165,7 @@ export default function TimelinePage() {
             onOpenScheduleForDay={openScheduleForDay}
             onMarkEaten={handleMarkEaten}
             onPushDay={handlePushDay}
-            onPreviewRecipe={(recipe) => {
-              setPreviewRecipe(recipe);
-              setRecipePreviewOpen(true);
-            }}
+            onPreviewRecipe={openRecipePreview}
             onRemoveMeal={handleRemoveMeal}
           />
         ))}

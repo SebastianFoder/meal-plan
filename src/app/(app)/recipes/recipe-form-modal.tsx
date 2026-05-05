@@ -4,42 +4,26 @@ import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { ApiError } from "@/lib/client-api";
+import {
+  useCreateRecipeMutation,
+  useUpdateRecipeMutation,
+} from "@/features/recipes/client/mutations";
+import type {
+  RecipeForForm,
+  UpsertRecipeInput,
+} from "@/features/recipes/client/types";
 import { IngredientListField } from "./ingredient-list-field";
 import { ParentRecipePicker } from "./parent-recipe-picker";
-
-export type RecipeForForm = {
-  id: string;
-  parentRecipeId: string | null;
-  name: string;
-  description: string | null;
-  ingredients: string[];
-};
 
 type RecipeFormModalProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   allRecipes: RecipeForForm[];
   editingRecipe: RecipeForForm | null;
-  onSaved: () => void | Promise<void>;
+  onSaved?: () => void | Promise<void>;
   onCreated?: (recipe: RecipeForForm) => void;
 };
-
-function parseApiError(payload: unknown): string {
-  if (!payload || typeof payload !== "object") return "Something went wrong.";
-  const err = (payload as { error?: unknown }).error;
-  if (!err || typeof err !== "object") return "Something went wrong.";
-  const formErrors = (err as { formErrors?: string[] }).formErrors;
-  if (Array.isArray(formErrors) && formErrors.length > 0) {
-    return formErrors.join(" ");
-  }
-  const fieldErrors = (err as { fieldErrors?: Record<string, string[]> })
-    .fieldErrors;
-  if (fieldErrors && typeof fieldErrors === "object") {
-    const parts = Object.values(fieldErrors).flat();
-    if (parts.length > 0) return parts.join(" ");
-  }
-  return "Check the form and try again.";
-}
 
 export function RecipeFormModal({
   open,
@@ -49,6 +33,8 @@ export function RecipeFormModal({
   onSaved,
   onCreated,
 }: RecipeFormModalProps) {
+  const createRecipeMutation = useCreateRecipeMutation();
+  const updateRecipeMutation = useUpdateRecipeMutation();
   const [name, setName] = useState(() => editingRecipe?.name ?? "");
   const [description, setDescription] = useState(
     () => editingRecipe?.description ?? "",
@@ -94,7 +80,7 @@ export function RecipeFormModal({
 
     setSaving(true);
     setSubmitError(null);
-    const body = {
+    const body: UpsertRecipeInput = {
       name: trimmedName,
       parentRecipeId: parentRecipeId.length > 0 ? parentRecipeId : null,
       description: description.trim() || undefined,
@@ -102,38 +88,20 @@ export function RecipeFormModal({
     };
 
     try {
-      const res = editingRecipe
-        ? await fetch(`/api/recipes/${editingRecipe.id}`, {
-            method: "PUT",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(body),
+      const savedRecipe = editingRecipe
+        ? await updateRecipeMutation.mutateAsync({
+            recipeId: editingRecipe.id,
+            input: body,
           })
-        : await fetch("/api/recipes", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(body),
-          });
-
-      if (!res.ok) {
-        let payload: unknown;
-        try {
-          payload = await res.json();
-        } catch {
-          payload = null;
-        }
-        setSubmitError(parseApiError(payload));
-        return;
-      }
-
-      const savedRecipe = (await res.json()) as RecipeForForm;
+        : await createRecipeMutation.mutateAsync(body);
       if (!editingRecipe) {
         onCreated?.(savedRecipe);
       }
 
       onOpenChange(false);
-      await onSaved();
-    } catch {
-      setSubmitError("Network error. Try again.");
+      await onSaved?.();
+    } catch (error) {
+      setSubmitError(error instanceof ApiError ? error.message : "Network error. Try again.");
     } finally {
       setSaving(false);
     }

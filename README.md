@@ -16,6 +16,15 @@ Production-ready MVP for personal meal planning with:
 - Prisma ORM + PostgreSQL
 - NextAuth (Google)
 - Recharts
+- Zustand + TanStack Query
+
+## Frontend State Conventions
+
+- TanStack Query owns server data fetching, caching, and CRUD mutations for frontend screens.
+- Zustand owns client/UI workflow state (selected items, modal state, transient view state).
+- Pages/components should not call `fetch` directly for domain data; use feature client hooks instead.
+- Query hooks and stores live under `src/features/<domain>/client`.
+- Current migrated domains: recipes, timeline/schedule/history.
 
 ## Setup
 

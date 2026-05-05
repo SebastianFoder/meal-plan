@@ -1,54 +1,35 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { RecipeFormModal, type RecipeForForm } from "./recipe-form-modal";
-
-type Recipe = RecipeForForm & {
-  parentRecipe?: { id: string; name: string } | null;
-  variations?: { id: string; name: string }[];
-};
+import { useDeleteRecipeMutation } from "@/features/recipes/client/mutations";
+import { useRecipesQuery } from "@/features/recipes/client/queries";
+import { useRecipesUiStore } from "@/features/recipes/client/recipes-ui-store";
+import type { Recipe } from "@/features/recipes/client/types";
+import { RecipeFormModal } from "./recipe-form-modal";
 
 export default function RecipesPage() {
-  const [items, setItems] = useState<Recipe[]>([]);
-  const [modalOpen, setModalOpen] = useState(false);
-  const [modalKey, setModalKey] = useState(0);
-  const [editingRecipe, setEditingRecipe] = useState<RecipeForForm | null>(null);
+  const items = useRecipesQuery();
+  const deleteRecipeMutation = useDeleteRecipeMutation();
+  const {
+    modalOpen,
+    modalKey,
+    editingRecipe,
+    openCreate,
+    openEdit,
+    setModalOpen,
+  } = useRecipesUiStore();
 
-  const loadData = async () => {
-    const res = await fetch("/api/recipes");
-    if (!res.ok) return;
-    const json = (await res.json()) as Recipe[];
-    setItems(json);
-  };
+  const recipeItems = items.data ?? [];
 
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    void loadData();
-  }, []);
-
-  const openCreate = () => {
-    setEditingRecipe(null);
-    setModalKey((k) => k + 1);
-    setModalOpen(true);
-  };
-
-  const openEdit = (recipe: Recipe) => {
-    setEditingRecipe({
+  const handleOpenEdit = (recipe: Recipe) => {
+    openEdit({
       id: recipe.id,
       parentRecipeId: recipe.parentRecipeId,
       name: recipe.name,
       description: recipe.description,
       ingredients: recipe.ingredients,
     });
-    setModalKey((k) => k + 1);
-    setModalOpen(true);
-  };
-
-  const handleModalOpenChange = (open: boolean) => {
-    setModalOpen(open);
-    if (!open) setEditingRecipe(null);
   };
 
   return (
@@ -56,10 +37,9 @@ export default function RecipesPage() {
       <RecipeFormModal
         key={modalKey}
         open={modalOpen}
-        onOpenChange={handleModalOpenChange}
-        allRecipes={items}
+        onOpenChange={setModalOpen}
+        allRecipes={recipeItems}
         editingRecipe={editingRecipe}
-        onSaved={loadData}
       />
 
       <Card className="space-y-3">
@@ -76,22 +56,34 @@ export default function RecipesPage() {
         </div>
       </Card>
 
+      {items.isError ? (
+        <Card>
+          <p className="text-sm text-red-300">Could not load recipes. Try refreshing.</p>
+        </Card>
+      ) : null}
+
+      {items.isLoading ? (
+        <Card>
+          <p className="text-sm text-zinc-400">Loading recipes...</p>
+        </Card>
+      ) : null}
+
       <div className="grid gap-4 md:grid-cols-2">
-        {items.map((item) => (
+        {recipeItems.map((item) => (
           <Card key={item.id} className="space-y-2">
             <div className="flex items-center justify-between gap-3">
               <h2 className="font-semibold">{item.name}</h2>
               <div className="flex gap-2">
-                <Button variant="secondary" size="sm" type="button" onClick={() => openEdit(item)}>
+                <Button variant="secondary" size="sm" type="button" onClick={() => handleOpenEdit(item)}>
                   Edit
                 </Button>
                 <Button
                   variant="secondary"
                   size="sm"
                   type="button"
+                  disabled={deleteRecipeMutation.isPending}
                   onClick={async () => {
-                    const res = await fetch(`/api/recipes/${item.id}`, { method: "DELETE" });
-                    if (res.ok) await loadData();
+                    await deleteRecipeMutation.mutateAsync(item.id);
                   }}
                 >
                   Delete
