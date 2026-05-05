@@ -1,68 +1,21 @@
 "use client";
 
 import {
-  addDays,
   eachDayOfInterval,
   addWeeks,
   endOfWeek,
   format,
-  isToday,
   startOfWeek,
 } from "date-fns";
 import { useEffect, useMemo, useState } from "react";
-import { Check, ChevronsRight, Plus, X } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { Dialog } from "@/components/ui/dialog";
 import {
   RecipeFormModal,
   type RecipeForForm,
 } from "@/app/(app)/recipes/recipe-form-modal";
+import { RecipePreviewDialog } from "./recipe-preview-dialog";
 import { ScheduleMealModal } from "./schedule-meal-modal";
-
-type Recipe = {
-  id: string;
-  name: string;
-  parentRecipe?: { id: string; name: string } | null;
-};
-
-type ScheduledMeal = {
-  id: string;
-  startDate: string;
-  durationDays: number;
-  recipe: {
-    id: string;
-    name: string;
-    description?: string | null;
-    ingredients?: string[];
-    parentRecipe?: { id: string; name: string } | null;
-  };
-};
-
-type MealHistory = {
-  id: string;
-  date: string;
-  actualMealName: string | null;
-  actualRecipe: { name: string } | null;
-};
-
-function toDateKey(value: string) {
-  return value.length >= 10
-    ? value.slice(0, 10)
-    : format(new Date(value), "yyyy-MM-dd");
-}
-
-function isMealActiveOnDay(meal: ScheduledMeal, dayKey: string) {
-  const startKey = toDateKey(meal.startDate);
-  const endKey = format(
-    addDays(
-      new Date(`${startKey}T00:00:00`),
-      Math.max(0, meal.durationDays - 1),
-    ),
-    "yyyy-MM-dd",
-  );
-  return dayKey >= startKey && dayKey <= endKey;
-}
+import type { MealHistory, Recipe, ScheduledMeal, TimelineWeek } from "./types";
+import { WeekSection } from "./week-section";
 
 export default function TimelinePage() {
   const [recipes, setRecipes] = useState<Recipe[]>([]);
@@ -105,9 +58,9 @@ export default function TimelinePage() {
     void load();
   }, []);
 
-  const weeks = useMemo(() => {
+  const weeks = useMemo<TimelineWeek[]>(() => {
     const currentWeekStart = startOfWeek(new Date(), { weekStartsOn: 1 });
-    return [-1, 0, 1].map((offset) => {
+    return ([-1, 0, 1] as const).map((offset) => {
       const weekStart = addWeeks(currentWeekStart, offset);
       const weekEnd = endOfWeek(weekStart, { weekStartsOn: 1 });
       return {
@@ -164,6 +117,35 @@ export default function TimelinePage() {
     setCreateRecipeModalOpen(true);
   };
 
+  const handleMarkEaten = async (dayKey: string, meal: ScheduledMeal) => {
+    const actualMealName = window.prompt("What did you actually eat?") ?? "";
+    await fetch("/api/history", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        date: dayKey,
+        plannedScheduledMealId: meal.id,
+        plannedRecipeId: meal.recipe.id,
+        actualMealName: actualMealName || meal.recipe.name,
+      }),
+    });
+    await load();
+  };
+
+  const handlePushDay = async (mealId: string) => {
+    await fetch("/api/schedule/push", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ mealId, days: 1 }),
+    });
+    await load();
+  };
+
+  const handleRemoveMeal = async (mealId: string) => {
+    await fetch(`/api/schedule/${mealId}`, { method: "DELETE" });
+    await load();
+  };
+
   return (
     <div className="space-y-6">
       <ScheduleMealModal
@@ -195,208 +177,30 @@ export default function TimelinePage() {
         onCreated={(recipe) => setSelectedRecipeId(recipe.id)}
         onSaved={load}
       />
-      <Dialog
+      <RecipePreviewDialog
         open={recipePreviewOpen}
         onOpenChange={setRecipePreviewOpen}
-        title={previewRecipe?.name ?? "Recipe"}
-        className="h-auto max-h-[80vh] w-[min(95vw,72rem)]"
-        contentClassName="max-h-[80vh] p-5"
-        footer={
-          <div className="flex justify-end">
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={() => setRecipePreviewOpen(false)}
-            >
-              Close
-            </Button>
-          </div>
-        }
-      >
-        <div className="grid items-stretch grid-cols-[minmax(0,2.2fr)_minmax(16rem,1fr)] gap-0">
-          <section className="flex h-full flex-col gap-3 border-r border-white/10 pr-4">
-            <h3 className="text-sm font-medium text-zinc-300">
-              Description / instructions
-            </h3>
-            <div className="h-full rounded-xl border border-white/10 bg-[#161618] p-3 text-sm text-zinc-200">
-              {previewRecipe?.description?.trim().length ? (
-                <p className="whitespace-pre-wrap">{previewRecipe.description}</p>
-              ) : (
-                <span className="text-zinc-500">No description or instructions added yet.</span>
-              )}
-            </div>
-          </section>
-          <section className="flex h-full flex-col gap-3 pl-4">
-            <h3 className="text-sm font-medium text-zinc-300">Ingredients</h3>
-            <div className="h-full rounded-xl border border-white/10 bg-[#161618] p-3">
-              {previewRecipe?.ingredients?.length ? (
-                <ul className="space-y-1.5 text-sm text-zinc-200">
-                  {previewRecipe.ingredients.map((ingredient) => (
-                    <li key={ingredient} className="list-inside list-disc truncate">
-                      {ingredient}
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="text-sm text-zinc-500">No ingredients yet.</p>
-              )}
-            </div>
-          </section>
-        </div>
-      </Dialog>
+        recipe={previewRecipe}
+      />
 
       <h2 className="text-lg font-semibold">Three-week timeline</h2>
       {loadError ? <p className="text-sm text-red-300">{loadError}</p> : null}
       <div className="space-y-4">
         {weeks.map((week) => (
-          <div
+          <WeekSection
             key={week.key}
-            className={
-              week.key === 0
-                ? "space-y-3 rounded-2xl border border-white/15 bg-white/[0.06] p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.07)]"
-                : week.key === -1
-                  ? "space-y-3 rounded-2xl border border-white/10 bg-white/[0.02] p-3 opacity-70"
-                  : "space-y-3 rounded-2xl border border-white/10 bg-white/[0.03] p-3 opacity-85"
-            }
-          >
-            <p className="text-sm font-medium text-zinc-300">{week.label}</p>
-            <div className="grid gap-3 md:grid-cols-7">
-              {week.days.map((day) => {
-                const dayKey = format(day, "yyyy-MM-dd");
-                const isCurrentDay = isToday(day);
-                const activeMeals = scheduledMeals.filter((meal) =>
-                  isMealActiveOnDay(meal, dayKey),
-                );
-                const eaten = history.find(
-                  (entry) =>
-                    format(new Date(entry.date), "yyyy-MM-dd") === dayKey,
-                );
-
-                return (
-                  <div
-                    key={dayKey}
-                    className={
-                      isCurrentDay
-                        ? "min-h-24 rounded-xl border border-white/20 bg-white/[0.09] p-3 text-sm shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]"
-                        : "min-h-24 rounded-xl border border-white/10 bg-[#161618] p-3 text-sm"
-                    }
-                  >
-                    <div className="flex items-center justify-between gap-3">
-                      <p className="font-medium">{format(day, "EEE d")}</p>
-                    </div>
-                    <div className="mt-2 flex w-full items-center gap-1.5">
-                      {activeMeals[0] ? (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-8 flex-1 px-0"
-                          aria-label={`Mark ${activeMeals[0].recipe.name} as eaten`}
-                          onClick={async () => {
-                            const actualMealName =
-                              window.prompt("What did you actually eat?") ?? "";
-                            const firstPlanned = activeMeals[0];
-                            await fetch("/api/history", {
-                              method: "POST",
-                              headers: { "Content-Type": "application/json" },
-                              body: JSON.stringify({
-                                date: dayKey,
-                                plannedScheduledMealId: firstPlanned?.id,
-                                plannedRecipeId: firstPlanned?.recipe.id,
-                                actualMealName:
-                                  actualMealName || firstPlanned?.recipe.name,
-                              }),
-                            });
-                            await load();
-                          }}
-                        >
-                          <Check className="size-4" aria-hidden />
-                        </Button>
-                      ) : null}
-                      {activeMeals[0] ? (
-                        <Button
-                          variant="secondary"
-                          size="sm"
-                          className="h-8 flex-1 px-0"
-                          aria-label={`Push ${activeMeals[0].recipe.name} by one day`}
-                          onClick={async () => {
-                            await fetch("/api/schedule/push", {
-                              method: "POST",
-                              headers: { "Content-Type": "application/json" },
-                              body: JSON.stringify({
-                                mealId: activeMeals[0].id,
-                                days: 1,
-                              }),
-                            });
-                            await load();
-                          }}
-                        >
-                          <ChevronsRight className="size-4" aria-hidden />
-                        </Button>
-                      ) : null}
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-8 flex-1 px-0"
-                        onClick={() => openScheduleForDay(dayKey)}
-                        aria-label={`Add meal for ${format(day, "EEEE d MMMM")}`}
-                      >
-                        <Plus className="size-4" aria-hidden />
-                      </Button>
-                    </div>
-                    <div className="flex items-center justify-between gap-2">
-                      {eaten ? (
-                        <p className="text-xs text-zinc-300">
-                          Ate:{" "}
-                          {eaten.actualRecipe?.name ??
-                            eaten.actualMealName ??
-                            "Logged"}
-                        </p>
-                      ) : null}
-                    </div>
-                    <div className="mt-3 space-y-2">
-                      {activeMeals.length === 0 ? (
-                        <span className="text-zinc-500">No meal</span>
-                      ) : (
-                        activeMeals.map((meal) => (
-                          <div
-                            key={meal.id}
-                            className="flex w-full items-center justify-between gap-2 rounded-lg border border-white/10 bg-white/10 px-2 py-1"
-                          >
-                            <button
-                              type="button"
-                              className="min-w-0 truncate text-left text-zinc-100 transition duration-200 ease-out hover:text-white"
-                              onClick={() => {
-                                setPreviewRecipe(meal.recipe);
-                                setRecipePreviewOpen(true);
-                              }}
-                            >
-                              {meal.recipe.name}
-                              {meal.recipe.parentRecipe
-                                ? ` (${meal.recipe.parentRecipe.name} variation)`
-                                : ""}
-                            </button>
-                            <button
-                              type="button"
-                              aria-label={`Remove ${meal.recipe.name} from timeline`}
-                              className="rounded p-0.5 text-zinc-400 transition duration-200 ease-out hover:bg-white/10 hover:text-white"
-                              onClick={async () => {
-                                await fetch(`/api/schedule/${meal.id}`, {
-                                  method: "DELETE",
-                                });
-                                await load();
-                              }}
-                            >
-                              <X className="size-3" aria-hidden />
-                            </button>
-                          </div>
-                        ))
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
+            week={week}
+            scheduledMeals={scheduledMeals}
+            history={history}
+            onOpenScheduleForDay={openScheduleForDay}
+            onMarkEaten={handleMarkEaten}
+            onPushDay={handlePushDay}
+            onPreviewRecipe={(recipe) => {
+              setPreviewRecipe(recipe);
+              setRecipePreviewOpen(true);
+            }}
+            onRemoveMeal={handleRemoveMeal}
+          />
         ))}
       </div>
     </div>
