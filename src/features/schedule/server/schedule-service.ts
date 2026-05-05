@@ -2,13 +2,6 @@ import { addDays } from "date-fns";
 import { ScheduleShiftReason } from "@/generated/prisma/enums";
 import { db } from "@/lib/prisma";
 
-type LegacyScheduledMeal = {
-  id: string;
-  startDate: Date;
-  durationDays: number;
-  mealTemplate: { id: string; name: string };
-};
-
 type CreateScheduledMealInput = {
   userId: string;
   recipeId: string;
@@ -17,27 +10,11 @@ type CreateScheduledMealInput = {
 };
 
 export async function listScheduledMeals(userId: string) {
-  try {
-    return await db.scheduledMeal.findMany({
-      where: { userId },
-      include: { recipe: { include: { parentRecipe: true } } },
-      orderBy: [{ startDate: "asc" }, { orderIndex: "asc" }],
-    });
-  } catch {
-    const legacyDb = db as unknown as {
-      scheduledMeal: { findMany: (args: object) => Promise<LegacyScheduledMeal[]> };
-    };
-    const rows = await legacyDb.scheduledMeal.findMany({
-      where: { userId },
-      include: { mealTemplate: true },
-      orderBy: [{ startDate: "asc" }, { orderIndex: "asc" }],
-    });
-
-    return rows.map((row) => ({
-      ...row,
-      recipe: row.mealTemplate,
-    }));
-  }
+  return db.scheduledMeal.findMany({
+    where: { userId },
+    include: { recipe: { include: { parentRecipe: true } } },
+    orderBy: [{ startDate: "asc" }, { orderIndex: "asc" }],
+  });
 }
 
 export async function createScheduledMeal(input: CreateScheduledMealInput) {
@@ -93,26 +70,10 @@ export async function pushMealForwardCascading(args: {
       });
     }
 
-    try {
-      return await tx.scheduledMeal.findMany({
-        where: { userId: args.userId },
-        include: { recipe: { include: { parentRecipe: true } } },
-        orderBy: [{ startDate: "asc" }, { orderIndex: "asc" }],
-      });
-    } catch {
-      const legacyTx = tx as unknown as {
-        scheduledMeal: { findMany: (args: object) => Promise<LegacyScheduledMeal[]> };
-      };
-      const rows = await legacyTx.scheduledMeal.findMany({
-        where: { userId: args.userId },
-        include: { mealTemplate: true },
-        orderBy: [{ startDate: "asc" }, { orderIndex: "asc" }],
-      });
-
-      return rows.map((row) => ({
-        ...row,
-        recipe: row.mealTemplate,
-      }));
-    }
+    return tx.scheduledMeal.findMany({
+      where: { userId: args.userId },
+      include: { recipe: { include: { parentRecipe: true } } },
+      orderBy: [{ startDate: "asc" }, { orderIndex: "asc" }],
+    });
   });
 }

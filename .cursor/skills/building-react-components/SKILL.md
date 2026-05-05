@@ -34,6 +34,7 @@ Create maintainable components that match this repository's existing architectur
 - Validate payloads in API routes with `zod`; keep route handlers thin.
 - Keep optimistic UI optional; default to simple refetch after mutation in this codebase.
 - Handle non-OK fetch responses and avoid unguarded `response.json()` on failures.
+- For form UIs inside modals/dialogs, include horizontal inner padding so input focus rings and hover highlights are fully visible.
 
 ## File Placement
 - Shared UI primitive: `src/components/ui/<name>.tsx`

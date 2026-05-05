@@ -26,6 +26,7 @@ Keep new UI visually consistent with this app's current premium dark style.
 - Favor consistent spacing scale already present in the codebase.
 - Maintain readable line lengths and clear section grouping.
 - In grids, guard against overflow issues with `min-w-0` when needed.
+- In modals with form fields, keep horizontal inner padding so focus rings/highlights do not look clipped at container edges.
 
 ## Motion and Effects
 - Motion should be quiet and purposeful.

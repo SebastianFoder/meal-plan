@@ -2,7 +2,7 @@ import { db } from "@/lib/prisma";
 
 type CreateRecipeInput = {
   userId: string;
-  parentRecipeId?: string;
+  parentRecipeId?: string | null;
   name: string;
   description?: string;
   ingredients: string[];
@@ -11,7 +11,7 @@ type CreateRecipeInput = {
 type UpdateRecipeInput = {
   id: string;
   userId: string;
-  parentRecipeId?: string;
+  parentRecipeId?: string | null;
   name: string;
   description?: string;
   ingredients: string[];
@@ -32,7 +32,7 @@ export async function createRecipe(input: CreateRecipeInput) {
   return db.recipe.create({
     data: {
       userId: input.userId,
-      parentRecipeId: input.parentRecipeId,
+      parentRecipeId: input.parentRecipeId ?? null,
       name: input.name,
       description: input.description,
       ingredients: input.ingredients,
@@ -50,7 +50,7 @@ export async function updateRecipe(input: UpdateRecipeInput) {
     },
     data: {
       name: input.name,
-      parentRecipeId: input.parentRecipeId,
+      parentRecipeId: input.parentRecipeId ?? null,
       description: input.description,
       ingredients: input.ingredients,
     },

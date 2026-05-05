@@ -5,7 +5,8 @@ import { requireUserId } from "@/lib/auth";
 
 const updateSchema = z.object({
   name: z.string().min(1).max(120),
-  parentRecipeId: z.string().optional(),
+  /** Omit or `null` to clear variation and make this a main recipe. */
+  parentRecipeId: z.string().nullish(),
   description: z.string().max(500).optional(),
   ingredients: z.array(z.string().min(1)).min(1),
 });

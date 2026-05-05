@@ -5,7 +5,7 @@ import { createRecipe, listRecipes } from "@/features/templates/server/templates
 
 const recipeSchema = z.object({
   name: z.string().min(1).max(120),
-  parentRecipeId: z.string().optional(),
+  parentRecipeId: z.string().nullish(),
   description: z.string().max(500).optional(),
   ingredients: z.array(z.string().min(1)).min(1),
 });
