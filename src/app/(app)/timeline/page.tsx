@@ -25,6 +25,7 @@ import {
 } from "@/features/timeline/client/queries";
 import { useTimelineUiStore } from "@/features/timeline/client/timeline-ui-store";
 import type { RecipeForForm } from "@/features/recipes/client/types";
+import { TimelineSkeleton } from "@/components/ui/timeline-skeleton";
 import { RecipePreviewDialog } from "./recipe-preview-dialog";
 import { ScheduleMealModal } from "./schedule-meal-modal";
 import type { MealHistory, Recipe, ScheduledMeal, TimelineWeek } from "./types";
@@ -208,33 +209,34 @@ export default function TimelinePage() {
           Could not load timeline data. Try refreshing the page.
         </p>
       ) : null}
-      {isInitialLoading ? (
-        <p className="text-sm text-zinc-400">Loading timeline...</p>
-      ) : null}
-      <div className="space-y-4">
-        {weeks.map((week) => (
-          <WeekSection
-            key={week.key}
-            week={week}
-            scheduledMeals={scheduledMeals}
-            history={history}
-            onOpenScheduleForDay={openScheduleForDay}
-            onMarkEaten={handleMarkEaten}
-            onUnmarkEaten={handleUnmarkEaten}
-            onPushDay={handlePushDay}
-            onPreviewRecipe={openRecipePreview}
-            onRemoveMeal={handleRemoveMeal}
-            dragState={dragState}
-            hoverDate={hoverDate}
-            hoverInsertionIndex={hoverInsertionIndex}
-            onDayDragStart={startDayDrag}
-            onMealDragStart={startMealDrag}
-            onDragEnd={handleDragEnd}
-            onHoverChange={setDragHover}
-            onDrop={handleDrop}
-          />
-        ))}
-      </div>
+      {hasLoadError ? null : isInitialLoading ? (
+        <TimelineSkeleton />
+      ) : (
+        <div className="space-y-4">
+          {weeks.map((week) => (
+            <WeekSection
+              key={week.key}
+              week={week}
+              scheduledMeals={scheduledMeals}
+              history={history}
+              onOpenScheduleForDay={openScheduleForDay}
+              onMarkEaten={handleMarkEaten}
+              onUnmarkEaten={handleUnmarkEaten}
+              onPushDay={handlePushDay}
+              onPreviewRecipe={openRecipePreview}
+              onRemoveMeal={handleRemoveMeal}
+              dragState={dragState}
+              hoverDate={hoverDate}
+              hoverInsertionIndex={hoverInsertionIndex}
+              onDayDragStart={startDayDrag}
+              onMealDragStart={startMealDrag}
+              onDragEnd={handleDragEnd}
+              onHoverChange={setDragHover}
+              onDrop={handleDrop}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 }

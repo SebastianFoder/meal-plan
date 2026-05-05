@@ -60,3 +60,22 @@ body {
     transform: translate3d(2%, 1%, 0) scale(1.02);
   }
 }
+
+@keyframes fetch-bar-slide {
+  0% {
+    transform: translateX(-120%);
+  }
+  100% {
+    transform: translateX(420%);
+  }
+}
+
+.animate-fetch-bar-slide {
+  animation: fetch-bar-slide 1.15s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-fetch-bar-slide {
+    animation: none;
+  }
+}

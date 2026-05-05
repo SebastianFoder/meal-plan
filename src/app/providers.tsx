@@ -1,5 +1,6 @@
 "use client";
 
+import { QueryFetchingBar } from "@/components/layout/query-fetching-bar";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useState } from "react";
 
@@ -20,5 +21,10 @@ export function AppProviders({ children }: AppProvidersProps) {
       }),
   );
 
-  return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
+  return (
+    <QueryClientProvider client={queryClient}>
+      <QueryFetchingBar />
+      {children}
+    </QueryClientProvider>
+  );
 }

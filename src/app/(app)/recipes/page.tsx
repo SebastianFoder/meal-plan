@@ -2,6 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { RecipesGridSkeleton } from "@/components/ui/recipes-grid-skeleton";
 import { useDeleteRecipeMutation } from "@/features/recipes/client/mutations";
 import { useRecipesQuery } from "@/features/recipes/client/queries";
 import { useRecipesUiStore } from "@/features/recipes/client/recipes-ui-store";
@@ -62,52 +63,50 @@ export default function RecipesPage() {
         </Card>
       ) : null}
 
-      {items.isLoading ? (
-        <Card>
-          <p className="text-sm text-zinc-400">Loading recipes...</p>
-        </Card>
-      ) : null}
-
-      <div className="grid gap-4 md:grid-cols-2">
-        {recipeItems.map((item) => (
-          <Card key={item.id} className="space-y-2">
-            <div className="flex items-center justify-between gap-3">
-              <h2 className="font-semibold">{item.name}</h2>
-              <div className="flex gap-2">
-                <Button variant="secondary" size="sm" type="button" onClick={() => handleOpenEdit(item)}>
-                  Edit
-                </Button>
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  type="button"
-                  disabled={deleteRecipeMutation.isPending}
-                  onClick={async () => {
-                    await deleteRecipeMutation.mutateAsync(item.id);
-                  }}
-                >
-                  Delete
-                </Button>
+      {items.isError ? null : items.isLoading ? (
+        <RecipesGridSkeleton />
+      ) : (
+        <div className="grid gap-4 md:grid-cols-2">
+          {recipeItems.map((item) => (
+            <Card key={item.id} className="space-y-2">
+              <div className="flex items-center justify-between gap-3">
+                <h2 className="font-semibold">{item.name}</h2>
+                <div className="flex gap-2">
+                  <Button variant="secondary" size="sm" type="button" onClick={() => handleOpenEdit(item)}>
+                    Edit
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    type="button"
+                    disabled={deleteRecipeMutation.isPending}
+                    onClick={async () => {
+                      await deleteRecipeMutation.mutateAsync(item.id);
+                    }}
+                  >
+                    Delete
+                  </Button>
+                </div>
               </div>
-            </div>
-            {item.description ? (
-              <p className="text-sm text-zinc-300">{item.description}</p>
-            ) : null}
-            {item.parentRecipe ? (
-              <p className="text-xs text-zinc-400">
-                Variation of: {item.parentRecipe.name}
-              </p>
-            ) : null}
-            {item.variations && item.variations.length > 0 ? (
-              <p className="text-xs text-zinc-400">
-                Variations:{" "}
-                {item.variations.map((variation) => variation.name).join(" • ")}
-              </p>
-            ) : null}
-            <p className="text-xs text-zinc-400">{item.ingredients.join(" • ")}</p>
-          </Card>
-        ))}
-      </div>
+              {item.description ? (
+                <p className="text-sm text-zinc-300">{item.description}</p>
+              ) : null}
+              {item.parentRecipe ? (
+                <p className="text-xs text-zinc-400">
+                  Variation of: {item.parentRecipe.name}
+                </p>
+              ) : null}
+              {item.variations && item.variations.length > 0 ? (
+                <p className="text-xs text-zinc-400">
+                  Variations:{" "}
+                  {item.variations.map((variation) => variation.name).join(" • ")}
+                </p>
+              ) : null}
+              <p className="text-xs text-zinc-400">{item.ingredients.join(" • ")}</p>
+            </Card>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
