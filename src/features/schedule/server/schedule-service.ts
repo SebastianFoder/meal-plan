@@ -46,6 +46,15 @@ export async function pushMealForwardCascading(args: {
       throw new Error("Scheduled meal not found.");
     }
 
+    // If this meal was marked as eaten on its original day, clear that history
+    // so pushing it forward returns the day to an uncompleted state.
+    await tx.mealHistory.deleteMany({
+      where: {
+        userId: args.userId,
+        plannedScheduledMealId: args.mealId,
+      },
+    });
+
     const futureMeals = await tx.scheduledMeal.findMany({
       where: {
         userId: args.userId,

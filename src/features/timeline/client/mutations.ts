@@ -43,7 +43,10 @@ export function usePushMealMutation() {
   return useMutation({
     mutationFn: pushMeal,
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: timelineQueryKeys.schedule });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: timelineQueryKeys.schedule }),
+        queryClient.invalidateQueries({ queryKey: timelineQueryKeys.history }),
+      ]);
     },
   });
 }
