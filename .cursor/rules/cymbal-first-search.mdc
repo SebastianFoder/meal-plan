@@ -1,0 +1,13 @@
+---
+description: Prefer Cymbal for code navigation and symbol/file discovery
+alwaysApply: true
+---
+
+# Cymbal-first code exploration
+
+- Use the `cymbal` CLI first for understanding existing code: symbol lookup, definitions, callers/callees, implementations, references, and impact tracing.
+- Start discovery with `cymbal search` and then `cymbal investigate` or `cymbal outline`/`cymbal show` as needed.
+- Do not start with `rg`, `grep`, `find`, or broad file reads when the task is codebase navigation.
+- Fall back to `ReadFile` and `rg` only after Cymbal narrows the location, or when the task is exact literal text matching.
+- For large unfamiliar files, run `cymbal outline` before reading targeted sections.
+- Do not run `cymbal index` manually.
