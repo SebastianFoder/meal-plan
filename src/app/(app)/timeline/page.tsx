@@ -7,7 +7,7 @@ import {
   format,
   startOfWeek,
 } from "date-fns";
-import { useMemo } from "react";
+import { useCallback, useMemo } from "react";
 import { RecipeFormModal } from "@/app/(app)/recipes/recipe-form-modal";
 import {
   useMarkMealEatenMutation,
@@ -24,6 +24,7 @@ import {
   useTimelineRecipesQuery,
 } from "@/features/timeline/client/queries";
 import { useTimelineUiStore } from "@/features/timeline/client/timeline-ui-store";
+import { useShallow } from "zustand/react/shallow";
 import type { RecipeForForm } from "@/features/recipes/client/types";
 import { TimelineSkeleton } from "@/components/ui/timeline-skeleton";
 import { RecipePreviewDialog } from "./recipe-preview-dialog";
@@ -73,7 +74,31 @@ export default function TimelinePage() {
     startMealDrag,
     setDragHover,
     clearDragState,
-  } = useTimelineUiStore();
+  } = useTimelineUiStore(
+    useShallow((state) => ({
+      selectedDay: state.selectedDay,
+      selectedRecipeId: state.selectedRecipeId,
+      scheduleModalOpen: state.scheduleModalOpen,
+      createRecipeModalOpen: state.createRecipeModalOpen,
+      createRecipeModalKey: state.createRecipeModalKey,
+      recipePreviewOpen: state.recipePreviewOpen,
+      previewRecipe: state.previewRecipe,
+      openScheduleForDay: state.openScheduleForDay,
+      setScheduleModalOpen: state.setScheduleModalOpen,
+      setSelectedRecipeId: state.setSelectedRecipeId,
+      openCreateRecipeModal: state.openCreateRecipeModal,
+      setCreateRecipeModalOpen: state.setCreateRecipeModalOpen,
+      setRecipePreviewOpen: state.setRecipePreviewOpen,
+      openRecipePreview: state.openRecipePreview,
+      dragState: state.dragState,
+      hoverDate: state.hoverDate,
+      hoverInsertionIndex: state.hoverInsertionIndex,
+      startDayDrag: state.startDayDrag,
+      startMealDrag: state.startMealDrag,
+      setDragHover: state.setDragHover,
+      clearDragState: state.clearDragState,
+    })),
+  );
 
   const recipes = recipesQuery.data ?? EMPTY_RECIPES;
   const scheduledMeals = scheduledMealsQuery.data ?? EMPTY_SCHEDULED_MEALS;
@@ -115,68 +140,93 @@ export default function TimelinePage() {
     [recipes],
   );
 
-  const handleSchedule = async (recipeId: string) => {
-    if (!selectedDay || !recipeId) return;
-    await scheduleMealMutation.mutateAsync({
-      recipeId,
-      startDate: selectedDay,
-      durationDays: 1,
-    });
-  };
+  const handleSchedule = useCallback(
+    async (recipeId: string) => {
+      if (!selectedDay || !recipeId) return;
+      await scheduleMealMutation.mutateAsync({
+        recipeId,
+        startDate: selectedDay,
+        durationDays: 1,
+      });
+    },
+    [scheduleMealMutation, selectedDay],
+  );
 
-  const handleMarkEaten = async (dayKey: string, meal: ScheduledMeal) => {
-    await markMealEatenMutation.mutateAsync({
-      date: dayKey,
-      plannedScheduledMealId: meal.id,
-      plannedRecipeId: meal.recipe.id,
-      actualMealName: meal.recipe.name,
-    });
-  };
+  const handleMarkEaten = useCallback(
+    async (dayKey: string, meal: ScheduledMeal) => {
+      await markMealEatenMutation.mutateAsync({
+        date: dayKey,
+        plannedScheduledMealId: meal.id,
+        plannedRecipeId: meal.recipe.id,
+        actualMealName: meal.recipe.name,
+      });
+    },
+    [markMealEatenMutation],
+  );
 
-  const handleUnmarkEaten = async (dayKey: string) => {
-    await unmarkMealEatenMutation.mutateAsync(dayKey);
-  };
+  const handleUnmarkEaten = useCallback(
+    async (dayKey: string) => {
+      await unmarkMealEatenMutation.mutateAsync(dayKey);
+    },
+    [unmarkMealEatenMutation],
+  );
 
-  const handlePushDay = async (mealId: string) => {
-    await pushMealMutation.mutateAsync({ mealId, days: 1 });
-  };
+  const handlePushDay = useCallback(
+    async (mealId: string) => {
+      await pushMealMutation.mutateAsync({ mealId, days: 1 });
+    },
+    [pushMealMutation],
+  );
 
-  const handleRemoveMeal = async (mealId: string) => {
-    await removeMealMutation.mutateAsync(mealId);
-  };
+  const handleRemoveMeal = useCallback(
+    async (mealId: string) => {
+      await removeMealMutation.mutateAsync(mealId);
+    },
+    [removeMealMutation],
+  );
 
-  const handleDrop = async (targetDate: string) => {
-    if (!dragState) return;
-    const currentDragState = dragState;
-    const currentHoverDate = hoverDate;
-    const currentHoverInsertionIndex = hoverInsertionIndex;
-    clearDragState();
+  const handleDrop = useCallback(
+    async (targetDate: string) => {
+      if (!dragState) return;
+      const currentDragState = dragState;
+      const currentHoverDate = hoverDate;
+      const currentHoverInsertionIndex = hoverInsertionIndex;
+      clearDragState();
 
-    if (currentDragState.type === "day") {
-      if (currentDragState.sourceDate === targetDate) {
+      if (currentDragState.type === "day") {
+        if (currentDragState.sourceDate === targetDate) {
+          return;
+        }
+        await moveDayMealsMutation.mutateAsync({
+          sourceDate: currentDragState.sourceDate,
+          targetDate,
+        });
         return;
       }
-      await moveDayMealsMutation.mutateAsync({
-        sourceDate: currentDragState.sourceDate,
+
+      const targetOrderIndex =
+        currentHoverDate === targetDate && currentHoverInsertionIndex != null
+          ? currentHoverInsertionIndex
+          : undefined;
+      await moveMealMutation.mutateAsync({
+        mealId: currentDragState.mealId,
         targetDate,
+        targetOrderIndex,
       });
-      return;
-    }
+    },
+    [
+      clearDragState,
+      dragState,
+      hoverDate,
+      hoverInsertionIndex,
+      moveDayMealsMutation,
+      moveMealMutation,
+    ],
+  );
 
-    const targetOrderIndex =
-      currentHoverDate === targetDate && currentHoverInsertionIndex != null
-        ? currentHoverInsertionIndex
-        : undefined;
-    await moveMealMutation.mutateAsync({
-      mealId: currentDragState.mealId,
-      targetDate,
-      targetOrderIndex,
-    });
-  };
-
-  const handleDragEnd = () => {
+  const handleDragEnd = useCallback(() => {
     clearDragState();
-  };
+  }, [clearDragState]);
 
   return (
     <div className="space-y-6">

@@ -2,7 +2,7 @@
 
 import { format, isToday } from "date-fns";
 import { Check, ChevronsRight, GripVertical, Plus, X } from "lucide-react";
-import type { DragEventHandler } from "react";
+import { memo, useMemo, type DragEventHandler } from "react";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import type { MealHistory, ScheduledMeal } from "./types";
@@ -32,7 +32,7 @@ type DayCardProps = {
   onDrop: (targetDate: string) => Promise<void>;
 };
 
-export function DayCard({
+export const DayCard = memo(function DayCard({
   day,
   activeMeals,
   eaten,
@@ -66,6 +66,10 @@ export function DayCard({
     activeMeals.length === 0 &&
     dropPlaceholderVisible &&
     dragState?.type === "meal";
+  const activeMealIds = useMemo(
+    () => new Set(activeMeals.map((meal) => meal.id)),
+    [activeMeals],
+  );
 
   const handleCardDrop: DragEventHandler<HTMLDivElement> = async (event) => {
     event.preventDefault();
@@ -166,11 +170,11 @@ export function DayCard({
             <span className="text-zinc-500">No meal</span>
           </>
         ) : (
-          activeMeals.map((meal) => (
+          activeMeals.map((meal, rowIndex) => (
             <div key={meal.id}>
               {dropPlaceholderVisible &&
               dragState?.type === "meal" &&
-              hoverInsertionIndex === activeMeals.findIndex((entry) => entry.id === meal.id) ? (
+              hoverInsertionIndex === rowIndex ? (
                 <div className="mb-2 rounded-lg border border-dashed border-sky-300/70 bg-sky-400/10 px-2 py-1 text-xs text-sky-100">
                   Drop meal here
                 </div>
@@ -182,10 +186,10 @@ export function DayCard({
                 onDragOver={(event) => {
                   if (isMovePending) return;
                   if (dragState?.type !== "meal") return;
+                  if (!activeMealIds.has(meal.id)) return;
                   event.preventDefault();
                   const rect = event.currentTarget.getBoundingClientRect();
                   const offset = event.clientY - rect.top;
-                  const rowIndex = activeMeals.findIndex((entry) => entry.id === meal.id);
                   const insertionIndex = offset < rect.height / 2 ? rowIndex : rowIndex + 1;
                   onHoverChange(dayKey, insertionIndex);
                 }}
@@ -241,4 +245,4 @@ export function DayCard({
       </div>
     </div>
   );
-}
+});

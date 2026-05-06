@@ -38,6 +38,41 @@ type TimelineUiState = {
   clearDragState: () => void;
 };
 
+type HoverPayload = {
+  hoverDate: string | null;
+  hoverInsertionIndex: number | null;
+};
+
+let hoverFrameId: number | null = null;
+let pendingHover: HoverPayload | null = null;
+
+function clearPendingHoverFrame() {
+  if (typeof window !== "undefined" && hoverFrameId != null) {
+    window.cancelAnimationFrame(hoverFrameId);
+  }
+  hoverFrameId = null;
+  pendingHover = null;
+}
+
+function commitHover(
+  set: (partial: Pick<TimelineUiState, "hoverDate" | "hoverInsertionIndex">) => void,
+  get: () => TimelineUiState,
+  nextHover: HoverPayload,
+) {
+  const state = get();
+  if (
+    state.hoverDate === nextHover.hoverDate &&
+    state.hoverInsertionIndex === nextHover.hoverInsertionIndex
+  ) {
+    return;
+  }
+
+  set({
+    hoverDate: nextHover.hoverDate,
+    hoverInsertionIndex: nextHover.hoverInsertionIndex,
+  });
+}
+
 export const useTimelineUiStore = create<TimelineUiState>((set, get) => ({
   selectedDay: null,
   selectedRecipeId: "",
@@ -83,41 +118,61 @@ export const useTimelineUiStore = create<TimelineUiState>((set, get) => ({
       recipePreviewOpen: true,
     }),
   startDayDrag: (sourceDate) =>
-    set({
-      dragState: {
-        type: "day",
-        sourceDate,
-      },
-      hoverDate: null,
-      hoverInsertionIndex: null,
-    }),
+    {
+      clearPendingHoverFrame();
+      set({
+        dragState: {
+          type: "day",
+          sourceDate,
+        },
+        hoverDate: null,
+        hoverInsertionIndex: null,
+      });
+    },
   startMealDrag: (mealId, sourceDate) =>
-    set({
-      dragState: {
-        type: "meal",
-        mealId,
-        sourceDate,
-      },
-      hoverDate: null,
-      hoverInsertionIndex: null,
-    }),
+    {
+      clearPendingHoverFrame();
+      set({
+        dragState: {
+          type: "meal",
+          mealId,
+          sourceDate,
+        },
+        hoverDate: null,
+        hoverInsertionIndex: null,
+      });
+    },
   setDragHover: (hoverDate, hoverInsertionIndex = null) => {
-    const state = get();
+    const nextHover: HoverPayload = { hoverDate, hoverInsertionIndex };
+    pendingHover = nextHover;
+
     if (
-      state.hoverDate === hoverDate &&
-      state.hoverInsertionIndex === hoverInsertionIndex
+      typeof window === "undefined" ||
+      typeof window.requestAnimationFrame !== "function"
     ) {
+      if (pendingHover) {
+        commitHover(set, get, pendingHover);
+      }
+      pendingHover = null;
       return;
     }
-    set({
-      hoverDate,
-      hoverInsertionIndex,
+
+    if (hoverFrameId != null) return;
+    hoverFrameId = window.requestAnimationFrame(() => {
+      hoverFrameId = null;
+      if (!pendingHover) return;
+      const latestHover = pendingHover;
+      pendingHover = null;
+      commitHover(set, get, latestHover);
     });
   },
   clearDragState: () =>
-    set({
-      dragState: null,
-      hoverDate: null,
-      hoverInsertionIndex: null,
-    }),
+    {
+      clearPendingHoverFrame();
+      set({
+        dragState: null,
+        hoverDate: null,
+        hoverInsertionIndex: null,
+      });
+    },
 }));

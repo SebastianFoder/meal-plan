@@ -3,12 +3,15 @@
 import { useIsFetching } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
 
+const isBackgroundFetch = (query: {
+  state: { fetchStatus: string; status: string };
+}) =>
+  query.state.fetchStatus === "fetching" && query.state.status !== "pending";
+
 /** Thin top bar when queries refetch in the background (not initial pending). */
 export function QueryFetchingBar() {
   const fetchingCount = useIsFetching({
-    predicate: (query) =>
-      query.state.fetchStatus === "fetching" &&
-      query.state.status !== "pending",
+    predicate: isBackgroundFetch,
   });
 
   const active = fetchingCount > 0;

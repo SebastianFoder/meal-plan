@@ -50,6 +50,7 @@ body {
     radial-gradient(circle at 10% 20%, rgba(255, 255, 255, 0.07), transparent 45%),
     radial-gradient(circle at 80% 0%, rgba(156, 163, 175, 0.06), transparent 42%);
   animation: slowFloat 20s ease-in-out infinite alternate;
+  will-change: transform;
 }
 
 @keyframes slowFloat {
@@ -75,7 +76,27 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .gradient-overlay {
+    animation: none;
+    opacity: 0.1;
+  }
+
+  .noise-overlay {
+    opacity: 0.015;
+  }
+
   .animate-fetch-bar-slide {
     animation: none;
+  }
+}
+
+@media (max-width: 1024px) {
+  .gradient-overlay {
+    animation: none;
+    opacity: 0.12;
+  }
+
+  .noise-overlay {
+    opacity: 0.02;
   }
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { format } from "date-fns";
+import { memo, useMemo } from "react";
 import { DayCard } from "./day-card";
 import type { MealHistory, ScheduledMeal, TimelineWeek } from "./types";
 import { isMealActiveOnDay } from "./utils";
@@ -30,7 +31,7 @@ type WeekSectionProps = {
   onDrop: (targetDate: string) => Promise<void>;
 };
 
-export function WeekSection({
+export const WeekSection = memo(function WeekSection({
   week,
   scheduledMeals,
   history,
@@ -58,18 +59,41 @@ export function WeekSection({
         ? "space-y-3 rounded-2xl border border-white/10 bg-white/[0.02] p-3 opacity-70"
         : "space-y-3 rounded-2xl border border-white/10 bg-white/[0.03] p-3 opacity-85";
 
+  const dayKeys = useMemo(
+    () => week.days.map((day) => format(day, "yyyy-MM-dd")),
+    [week.days],
+  );
+
+  const activeMealsByDay = useMemo(() => {
+    const mapped = new Map<string, ScheduledMeal[]>();
+    dayKeys.forEach((dayKey) => mapped.set(dayKey, []));
+
+    for (const meal of scheduledMeals) {
+      for (const dayKey of dayKeys) {
+        if (!isMealActiveOnDay(meal, dayKey)) continue;
+        mapped.get(dayKey)?.push(meal);
+      }
+    }
+
+    return mapped;
+  }, [dayKeys, scheduledMeals]);
+
+  const historyByDay = useMemo(() => {
+    const mapped = new Map<string, MealHistory>();
+    for (const entry of history) {
+      mapped.set(format(new Date(entry.date), "yyyy-MM-dd"), entry);
+    }
+    return mapped;
+  }, [history]);
+
   return (
     <div className={containerClassName}>
       <p className="text-sm font-medium text-zinc-300">{week.label}</p>
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7">
-        {week.days.map((day) => {
-          const dayKey = format(day, "yyyy-MM-dd");
-          const activeMeals = scheduledMeals.filter((meal) =>
-            isMealActiveOnDay(meal, dayKey),
-          );
-          const eaten = history.find(
-            (entry) => format(new Date(entry.date), "yyyy-MM-dd") === dayKey,
-          );
+        {week.days.map((day, dayIndex) => {
+          const dayKey = dayKeys[dayIndex];
+          const activeMeals = activeMealsByDay.get(dayKey) ?? [];
+          const eaten = historyByDay.get(dayKey);
 
           return (
             <DayCard
@@ -99,4 +123,4 @@ export function WeekSection({
       </div>
     </div>
   );
-}
+});
