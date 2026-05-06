@@ -61,7 +61,7 @@ export function WeekSection({
   return (
     <div className={containerClassName}>
       <p className="text-sm font-medium text-zinc-300">{week.label}</p>
-      <div className="grid gap-3 md:grid-cols-7">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7">
         {week.days.map((day) => {
           const dayKey = format(day, "yyyy-MM-dd");
           const activeMeals = scheduledMeals.filter((meal) =>

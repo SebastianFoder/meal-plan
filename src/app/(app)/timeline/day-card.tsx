@@ -189,7 +189,7 @@ export function DayCard({
                   const insertionIndex = offset < rect.height / 2 ? rowIndex : rowIndex + 1;
                   onHoverChange(dayKey, insertionIndex);
                 }}
-                className={`flex w-full items-center justify-between gap-2 rounded-lg border border-white/10 bg-white/10 px-2 py-1 ${
+                className={`flex w-full items-center justify-between gap-2 overflow-hidden rounded-lg border border-white/10 bg-white/10 px-2 py-1 ${
                   dragState?.type === "meal" && dragState.mealId === meal.id
                     ? "opacity-45"
                     : ""
@@ -199,20 +199,22 @@ export function DayCard({
                   type="button"
                   variant="ghost"
                   size="sm"
-                  className="h-auto min-w-0 flex-1 justify-start px-0 text-left text-zinc-100 transition duration-200 ease-out hover:text-white"
+                  className="h-auto min-w-0 flex-1 justify-start px-0 text-left text-xs text-zinc-100 transition duration-200 ease-out hover:text-white"
                   disabled={isMovePending}
                   onClick={() => onPreviewRecipe(meal.recipe)}
                 >
-                  {meal.recipe.name}
-                  {meal.recipe.parentRecipe
-                    ? ` (${meal.recipe.parentRecipe.name} variation)`
-                    : ""}
+                  <span className="block w-full truncate">
+                    {meal.recipe.name}
+                    {meal.recipe.parentRecipe
+                      ? ` (${meal.recipe.parentRecipe.name} variation)`
+                      : ""}
+                  </span>
                 </Button>
                 <button
                   type="button"
                   aria-label={`Remove ${meal.recipe.name} from timeline`}
                   disabled={isMovePending || removingMealId === meal.id}
-                  className="rounded p-0.5 text-zinc-400 transition duration-200 ease-out hover:bg-white/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
+                  className="shrink-0 rounded p-0.5 text-zinc-400 transition duration-200 ease-out hover:bg-white/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
                   onClick={() => onRemoveMeal(meal.id)}
                 >
                   {removingMealId === meal.id ? (
