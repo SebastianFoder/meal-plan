@@ -9,6 +9,7 @@ const links = [
   { href: "/dashboard", label: "Dashboard" },
   { href: "/recipes", label: "Recipies" },
   { href: "/timeline", label: "Timeline" },
+  { href: "/account", label: "Account" },
 ];
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
